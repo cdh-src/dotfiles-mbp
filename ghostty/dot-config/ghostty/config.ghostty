@@ -10,7 +10,7 @@ font-feature = +ss01
 mouse-hide-while-typing = true
 
 # Background
-background-opacity = 0.80
+background-opacity = 0.85
 # background-opacity-cells = true
 background-blur = macos-glass-clear
 
