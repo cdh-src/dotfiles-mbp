@@ -1,0 +1,41 @@
+# Theme
+theme = "Rose Pine"
+
+# Font Setup
+font-family = "0xProto Nerd Font"
+window-title-font-family = "0xProto Nerd Font"
+font-feature = +ss01
+
+# Mouse
+mouse-hide-while-typing = true
+
+# Background
+background-opacity = 0.80
+# background-opacity-cells = true
+background-blur = macos-glass-clear
+
+# Title
+# title = " "
+
+# Window Settings
+window-padding-x = 5
+quit-after-last-window-closed = true
+quit-after-last-window-closed-delay = 5s
+
+# Clipboard
+clipboard-trim-trailing-spaces = true
+right-click-action = copy-or-paste
+
+
+# Quick Terminal
+quick-terminal-position = left
+quick-terminal-screen = mouse
+quick-terminal-size = 33%
+quick-terminal-space-behavior = remain
+
+# Keybinds
+keybind = global:super+`=toggle_quick_terminal
+
+macos-titlebar-proxy-icon = hidden
+macos-dock-drop-behavior = new-window
+
