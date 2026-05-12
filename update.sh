@@ -1,10 +1,9 @@
 #!/bin/zsh
 
-mkdir -p ~/.config/nvim/lua/config
-mkdir -p ~/.config/nvim/lua/plugins
+cd "${0:A:h}"
 
-files=(ghostty zsh nvim)
+files=( *(N/) )
 for file in $files; do
   echo "Updating: $file"
-  stow --dotfiles --target=$HOME $file
+  stow --dotfiles --no-folding --target=$HOME $file
 done

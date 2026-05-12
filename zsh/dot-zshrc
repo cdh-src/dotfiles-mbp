@@ -22,12 +22,12 @@ zinit light-mode for \
 ### End of Zinit's installer chunk
 
 
-
-
 # Packages
 zinit light zsh-users/zsh-autosuggestions
 zinit light zsh-users/zsh-syntax-highlighting
 zinit light ajeetdsouza/zoxide
+
+bindkey '^ ' autosuggest-accept
 
 # Aliases
 alias vim=nvim
