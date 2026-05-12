@@ -1,5 +1,4 @@
-return
-{
+return {
   'neovim/nvim-lspconfig',
   config = function()
     -- 1. Global configuration (applied to all servers)
@@ -27,6 +26,7 @@ return
           workspace = {
             library = {
               vim.env.VIMRUNTIME,
+              vim.api.nvim_get_runtime_file("", true),
               -- This adds your own config and plugins to the path.
               -- "${3rd}/luv/library" -- optional: for libuv help?
             },
