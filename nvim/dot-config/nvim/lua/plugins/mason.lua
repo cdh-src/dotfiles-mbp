@@ -1,1 +1,10 @@
-return { 'williamboman/mason.nvim' }
+return
+{
+  'mason-org/mason.nvim',
+  opts = {
+    registries = {
+      "github:mason-org/mason-registry",
+      "github:mkindberg/ghostty-ls"
+    }
+  }
+}
