@@ -23,4 +23,4 @@ vim.api.nvim_create_autocmd("BufWritePost", {
   end,
 })
 
-vim.cmd("colorscheme rose-pine-main")
+--vim.cmd("colorscheme rose-pine-main")

@@ -1,0 +1,26 @@
+model_list:
+model_list:
+  - model_name: claude-opus-4.6
+    litellm_params:
+      model: github_copilot/claude-opus-4.6
+  - model_name: claude-opus-4.7
+    litellm_params:
+      model: github_copilot/claude-opus-4.7-xhigh
+  - model_name: claude-sonnet-4.6
+    litellm_params:
+      model: github_copilot/claude-sonnet-4.6
+  - model_name: claude-haiku-4.5
+    litellm_params:
+      model: github_copilot/claude-haiku-4.5
+  - model_name: claude-sonnet-4.5
+    litellm_params:
+      model: github_copilot/claude-sonnet-4.5
+  - model_name: claude-haiku-4.5-20251001
+    litellm_params:
+      model: github_copilot/claude-haiku-4.5
+
+litellm_settings:
+  drop_params: true
+
+general_settings:
+  master_key: os.environ/ANTHROPIC_AUTH_TOKEN

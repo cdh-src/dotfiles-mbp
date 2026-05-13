@@ -1,5 +1,6 @@
 # Theme
-theme = "Rose Pine"
+# theme = "Rose Pine"
+theme = Nord Wave
 
 # Font Setup
 font-family = "0xProto Nerd Font"
@@ -10,9 +11,9 @@ font-feature = +ss01
 mouse-hide-while-typing = true
 
 # Background
-background-opacity = 0.85
-# background-opacity-cells = true
-background-blur = macos-glass-clear
+background-opacity = 0.95
+background-opacity-cells = true
+background-blur = macos-glass-regular
 
 # Title
 # title = " "
