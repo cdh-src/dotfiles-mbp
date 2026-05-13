@@ -37,9 +37,23 @@ return {
       },
     })
 
+    vim.lsp.config("yamlls", {
+      settings = {
+        yaml = {
+          format = {
+            enable = true,
+          },
+          validate = true,
+          schemas = {
+          },
+        },
+      },
+    })
+
     -- 3. Enable the servers.
     vim.lsp.enable("pyright")
     vim.lsp.enable("lua_ls")
+    vim.lsp.enable("yamlls")
   end
 }
 
