@@ -6,7 +6,7 @@ vim.opt.shiftwidth = 2
 vim.opt.tabstop = 2
 vim.opt.softtabstop = 2
 
-vim.keymap.set('n', '<Leader>e', '<cmd>Neotree right toggle<CR>', {noremap = true, silent = true})
+vim.keymap.set('n', '<Leader>e', '<cmd>Neotree left toggle<CR>', {noremap = true, silent = true})
 vim.keymap.set('n', '<Leader>xx', '<cmd>lua vim.diagnostic.open_float()<CR>', {noremap=true, silent=true})
 
 vim.keymap.set('n', '<Leader>h', '<cmd>wincmd h<CR>', {noremap = true, silent = true})
