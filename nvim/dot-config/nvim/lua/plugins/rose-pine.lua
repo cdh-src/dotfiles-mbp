@@ -1,10 +1,11 @@
 -- lua/plugins/rose-pine.lua
-return {
-  "rose-pine/neovim",
-  name = "rose-pine",
-  opts = {
-    styles = {
-      transparency = true
-    }
-  }
-}
+return { }
+-- return {
+--   "rose-pine/neovim",
+--   name = "rose-pine",
+--   opts = {
+--     styles = {
+--       transparency = true
+--     }
+--   }
+-- }
