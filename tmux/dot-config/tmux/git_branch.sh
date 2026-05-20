@@ -1,13 +1,13 @@
 #!/bin/zsh
 # Emit a tmux-formatted git status segment for the active pane's cwd:
 #
-#    main                              (clean)
-#    main [↑2]                         (2 commits ahead of upstream)
-#    main [↑2 ↓1 ●3 ○5 …2 ♀1 ⚑2]    (everything at once)
+#   main                               (clean)
+#   main ↑2                            (2 commits ahead of upstream)
+#   main ↑2 ↓1 ●3 ○5 …2 ⚔1 ⚑2      (everything at once)
 #    abc1234                           (detached HEAD)
 #
 # Symbols: ↑ ahead, ↓ behind, ● staged, ○ unstaged, … untracked,
-#          ♀ conflicts, ⚑ stash entries. Zero-count categories are hidden.
+#          ⚔ conflicts, ⚑ stash entries. Zero-count categories are hidden.
 #
 # Outputs nothing when not inside a git repo, so the surrounding tmux
 # conditional in status-left collapses the whole segment.
@@ -70,7 +70,7 @@ else
   branch_text="$branch"
 fi
 # `` is U+E0A0 nf-pl-branch.
-branch_display="${C_BRANCH} ${branch_text}${C_RESET}"
+branch_display="${C_BRANCH}${branch_text}${C_RESET}"
 
 # ---- Status segments -------------------------------------------------------
 typeset -a segments
@@ -79,13 +79,12 @@ typeset -a segments
 (( staged > 0 ))    && segments+=("${C_STAGED}●${staged}")
 (( unstaged > 0 ))  && segments+=("${C_UNSTAGED}○${unstaged}")
 (( untracked > 0 )) && segments+=("${C_UNTRACKED}…${untracked}")
-(( conflicts > 0 )) && segments+=("${C_CONFLICT}♀${conflicts}")
+(( conflicts > 0 )) && segments+=("${C_CONFLICT}⚔${conflicts}")
 (( stash > 0 ))     && segments+=("${C_STASH}⚑${stash}")
 
 if (( ${#segments[@]} > 0 )); then
-  # Join with " " then wrap in dim-grey brackets.
   inside="${(j: :)segments}"
-  print -- "${branch_display} ${C_BRACKET}[${inside}${C_BRACKET}]${C_RESET}"
+  print -- "${branch_display} ${inside}${C_RESET}"
 else
   print -- "${branch_display}"
 fi
