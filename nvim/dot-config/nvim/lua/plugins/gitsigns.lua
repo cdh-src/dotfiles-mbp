@@ -1,3 +1,5 @@
+-- Git decorations in the sign column: add/change/delete markers per line.
+-- Also exposes :Gitsigns commands for line-blame, hunk preview, etc.
 return
 {
   "lewis6991/gitsigns.nvim",

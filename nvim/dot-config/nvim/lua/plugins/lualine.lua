@@ -1,3 +1,6 @@
+-- Statusline. Themed nord to match tmux/starship.
+-- Sections: filetype/filename/lsp_status/searchcount on the left,
+-- buffer list + encoding + fileformat on the right.
 return {
   "nvim-lualine/lualine.nvim",
   dependencies = { 'nvim-tree/nvim-web-devicons' },

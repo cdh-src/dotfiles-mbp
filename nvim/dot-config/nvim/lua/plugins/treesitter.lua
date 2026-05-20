@@ -1,3 +1,5 @@
+-- Syntax-aware parsing & highlighting. Auto-installs the listed grammars.
+-- Lazy=false so highlighting is ready at startup.
 return {
     "nvim-treesitter/nvim-treesitter",
     build = ":TSUpdate",

@@ -1,3 +1,5 @@
+-- Completion engine. Lazy-loaded on InsertEnter.
+-- Sources: LSP, LuaSnip snippets, current buffer, filesystem paths.
 return {
   {
     "hrsh7th/nvim-cmp",

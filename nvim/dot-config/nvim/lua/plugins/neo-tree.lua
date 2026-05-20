@@ -1,3 +1,5 @@
+-- File explorer in a left-side window. Closes nvim if it's the last window.
+-- Bundles lsp-file-operations so renames inside the tree update LSP refs.
 return {
   {
     "nvim-neo-tree/neo-tree.nvim",

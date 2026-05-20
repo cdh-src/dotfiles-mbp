@@ -1,3 +1,4 @@
+-- Neogit: a Magit-style git UI for nvim. Bound to <leader>gg.
 return
 {
   "NeogitOrg/neogit",

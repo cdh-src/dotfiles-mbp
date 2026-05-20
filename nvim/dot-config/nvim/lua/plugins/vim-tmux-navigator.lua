@@ -1,3 +1,5 @@
+-- Seamless C-h/j/k/l navigation between nvim splits and tmux panes.
+-- Also installed on the tmux side (tmux/dot-tmux.conf) — both halves required.
 return {
   "christoomey/vim-tmux-navigator",
   cmd = {
