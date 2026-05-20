@@ -41,6 +41,15 @@ case $TERM in
     ;;
 esac
 
+# Export $HISTCMD so starship's [env_var.STARSHIP_CMD_NUM] can display it.
+function export-cmd-num() { export STARSHIP_CMD_NUM=$HISTCMD; }
+precmd_functions+=(export-cmd-num)
+
+# Starship Prompt
+eval "$(starship init zsh)"
+
+bindkey -v
+
 # For litellm, etc.
 export PATH="/Users/chartwig/.local/bin:$PATH"
 

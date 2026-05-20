@@ -1,0 +1,54 @@
+"$schema" = 'https://starship.rs/config-schema.json'
+
+# Minimal nord-themed prompt: command number + character on the left,
+# current directory on the right. Git info is intentionally absent — the
+# tmux status bar already shows branch and detailed status.
+#
+# Wiring: zsh's precmd exports STARSHIP_CMD_NUM=$HISTCMD so the [env_var]
+# module below can render it. See zsh/dot-zshrc.
+
+add_newline = false
+palette = "nord"
+
+# Left side: command number in dim brackets, then the prompt character.
+format = """
+$character"""
+
+# Right side: current directory (home collapsed to ~).
+right_format = """$directory"""
+
+# ---- Palette (matches tmux status bar) -------------------------------------
+[palettes.nord]
+nord0  = "#2e3440"  # base bg
+nord3  = "#4c566a"  # dim fg
+nord4  = "#d8dee9"  # fg
+nord7  = "#8fbcbb"  # frost teal
+nord8  = "#88c0d0"  # frost light blue (accent)
+nord9  = "#81a1c1"  # frost dark blue
+nord11 = "#bf616a"  # red (errors)
+nord13 = "#ebcb8b"  # yellow
+nord14 = "#a3be8c"  # green (vi command mode)
+nord15 = "#b48ead"  # purple (prompt char)
+
+# ---- Modules ---------------------------------------------------------------
+
+[directory]
+style = "nord8"
+truncation_length = 3
+truncate_to_repo = false
+format = "[$path]($style)[$read_only]($read_only_style) "
+read_only = " "
+read_only_style = "nord11"
+
+[character]
+success_symbol = "[❯](nord15)"
+error_symbol   = "[❯](nord11)"
+vimcmd_symbol  = "[❮](nord14)"
+
+# Command number from $HISTCMD, exported by zsh's precmd.
+# Format: "[42] " in dim grey brackets, light-grey number.
+[env_var.STARSHIP_CMD_NUM]
+variable = "STARSHIP_CMD_NUM"
+format = "[\\[]($style)[$env_value](nord4)[\\]]($style) "
+style = "nord3"
+disabled = false
