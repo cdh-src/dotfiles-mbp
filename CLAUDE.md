@@ -25,7 +25,7 @@ When adding a new config file, place it inside the appropriate package with the 
 `update.sh` iterates the top-level directories and runs `stow --dotfiles --no-folding --target=$HOME <pkg>` for each. Run it after adding a new package directory or after a fresh checkout.
 
 ```sh
-./get_batt.sh      # Print current battery percentage (used by status bars, etc.)
+./get_batt.sh      # Print current battery percentage (legacy; tmux now uses tmux/dot-config/tmux/battery.sh)
 ./litellm/ai_proxy.sh   # Launch the local LiteLLM proxy on 127.0.0.1:4000
 ```
 
@@ -40,3 +40,18 @@ When adding a new config file, place it inside the appropriate package with the 
 - **Neovim entry point.** `nvim/dot-config/nvim/init.lua` calls `require("config.lazy")` (lazy.nvim bootstrap); individual plugin specs live under `lua/plugins/`. `init.lua` auto-reloads itself on `:w`.
 
 - **tmux.** Prefix is remapped to `C-a`; plugin loader is `tpack` (the final `run 'tpack init'` line must stay last).
+
+- **tmux status bar is split across two files.** `tmux/dot-tmux.conf` holds core options + plugin loading; `tmux/dot-tmux.status.conf` (sourced from `dot-tmux.conf` just before `tpack init`) holds the status-line theme. Iterate on the status bar in the second file. A `%hidden SEP=...` variable at the top defines a separator that recolors when the prefix is held — reuse it instead of hand-coding dots.
+
+- **tmux status helpers live in `tmux/dot-config/tmux/`** and are invoked via `#(~/.config/tmux/<script>.sh '#{pane_current_path}')` in `dot-tmux.status.conf`. Each emits empty output → the surrounding tmux conditional collapses the segment:
+  - `git_branch.sh` — full git status segment ( + branch + ahead/behind/staged/unstaged/untracked/conflicts/stash with counts). Empty outside a repo.
+  - `battery.sh` — Nerd Font MDI battery glyph + percent, with a separate icon family for charging vs discharging. Replaces the old `get_batt.sh` for tmux purposes; `get_batt.sh` is kept untouched in case anything else calls it.
+  - `shorten_cwd.sh` — abbreviates parent dirs (`~/code/dotfiles-mbp` → `~/c/dotfiles-mbp`). Currently unused in the status bar but kept for future reuse.
+
+- **Nord palette is duplicated across tmux + starship.** `tmux/dot-tmux.status.conf` and `starship/dot-config/starship.toml` (the `[palettes.nord]` block) both define the same hex codes. If you tweak a color, update both. The status helper scripts also embed these colors inline via `#[fg=#XXXXXX]` tags.
+
+- **Starship `[env_var.STARSHIP_CMD_NUM]` depends on zsh.** `zsh/dot-zshrc` exports `STARSHIP_CMD_NUM=$HISTCMD` from a `precmd_functions` hook. The bracketed command number in the prompt will silently disappear if that hook is removed.
+
+- **tmux title bar uses OSC 2.** `set-titles on` + `set-titles-string` in `dot-tmux.conf` push titles up to the outer terminal. `terminal-overrides` adds `Ts=\E]2;:fs=\E\\` because `tmux-256color`'s terminfo entry doesn't advertise title capability. Zsh sets the *pane* title (which tmux can read via `#{pane_title}`) from `set-pane-title` in `precmd_functions`.
+
+- **Multi-byte glyph editing gotcha.** Several files in this repo contain Nerd Font and Unicode glyphs (`` U+E0A0,  U+F4C3, `` U+F444, MDI battery icons U+F0079.., `⚔` U+2694, `⚑` U+2691, etc.). The `Edit` tool occasionally drops these bytes on write. After editing, verify with `awk 'NR==N' file | od -An -tx1` or `LC_ALL=C grep -aoE` for the UTF-8 byte sequence. For surgical glyph insertion, prefer a `python3` heredoc that opens the file as bytes.
