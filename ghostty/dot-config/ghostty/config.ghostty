@@ -4,6 +4,7 @@ theme = Nord Wave
 
 # Font Setup
 font-family = "0xProto Nerd Font"
+font-size = 14
 # window-title-font-family = "0xProto Nerd Font"
 font-feature = +ss01
 
