@@ -1,3 +1,5 @@
+-- Built-in LSP client config. Enables pyright, lua_ls, yamlls.
+-- Wires nvim-cmp capabilities into all servers via the "*" config.
 return {
   'neovim/nvim-lspconfig',
   config = function()

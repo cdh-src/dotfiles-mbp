@@ -1,0 +1,10 @@
+# Homebrew lives at /opt/homebrew on Apple Silicon and /usr/local on Intel.
+# Initialize whichever is present; do nothing if neither exists (e.g. fresh
+# checkout before bootstrap has run).
+export HOMEBREW_NO_ANALYTICS=1
+for brew_bin in /opt/homebrew/bin/brew /usr/local/bin/brew; do
+  if [[ -x $brew_bin ]]; then
+    eval "$($brew_bin shellenv)"
+    break
+  fi
+done
