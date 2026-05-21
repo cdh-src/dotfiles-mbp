@@ -34,8 +34,9 @@ Without these, parts of the prompt/status bar/editor go silent or error.
 | **ghostty** | `ghostty/dot-config/ghostty/config.ghostty` | `brew install --cask ghostty` |
 | **lsd** | `alias ls=lsd` in `dot-zshrc`. Without it, every `ls` errors. | `brew install lsd` |
 | **zoxide** | Loaded as a Zinit plugin in `dot-zshrc`. Provides smarter `cd`. | `brew install zoxide` |
-| **litellm** | `litellm/ai_proxy.sh` launches a LiteLLM server that fronts the GitHub Copilot Claude models for Claude Code. | `pip install 'litellm[proxy]'` (or `brew install python3` first if needed, then `pipx install 'litellm[proxy]'`). |
-| **python3** | Some tmux helper scripts and litellm itself. | Pre-installed on modern macOS; otherwise `brew install python3`. |
+| **uv** | Python toolchain manager used to install LiteLLM in an isolated venv pinned to a specific Python version. | `brew install uv` |
+| **litellm** | `litellm/ai_proxy.sh` launches a LiteLLM server that fronts the GitHub Copilot Claude models for Claude Code. The `[proxy]` extras (uvicorn, fastapi, etc.) are required for the server. **Pin Python to 3.13** — some of LiteLLM's proxy dependencies have lagged on newer Python versions and produce import errors otherwise. | `uv tool install --python 3.13 'litellm[proxy]'` |
+| **python3** | Used directly by a few small helper scripts. | Pre-installed on modern macOS; otherwise `brew install python3`. |
 
 ## 3. Fonts
 

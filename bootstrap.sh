@@ -67,7 +67,9 @@ This script installs everything PREREQUISITES.md describes:
   - Homebrew (if missing)
   - Hard requirements: git, stow, zsh
   - Config tools:     tmux, tpack, starship, neovim, ghostty,
-                      lsd, zoxide, litellm, python3
+                      lsd, zoxide, python3, uv
+  - LiteLLM:          via `uv tool install --python 3.13 'litellm[proxy]'`
+                      (Python pin matters; newer Pythons have broken proxy deps)
   - Font:             0xProto Nerd Font
 
 It does NOT create ~/.zshsecrets or run ./update.sh —
@@ -126,19 +128,19 @@ brew_cask_install ghostty
 brew_install lsd
 brew_install zoxide
 brew_install python3
+brew_install uv
 
-# LiteLLM is a Python package, not a brew formula. Install via pipx if
-# available (preferred — isolated venv), otherwise fall back to pip3 --user.
-bold "  LiteLLM (Python package)"
+# LiteLLM is a Python package installed via uv into an isolated venv.
+# IMPORTANT: pin Python to 3.13 — some of LiteLLM's proxy dependencies have
+# historically lagged on newer Python releases and produce import errors
+# otherwise. The [proxy] extras (uvicorn, fastapi, etc.) are required for
+# ai_proxy.sh to work.
+bold "  LiteLLM (via uv, pinned to Python 3.13)"
 if have litellm; then
-  info "✓ litellm already installed"
+  info "✓ litellm already installed at: $(command -v litellm)"
 else
-  if ! have pipx; then
-    brew_install pipx
-    pipx ensurepath >/dev/null 2>&1 || true
-  fi
-  info "installing litellm via pipx…"
-  pipx install 'litellm[proxy]'
+  info "installing litellm via uv tool install…"
+  uv tool install --python 3.13 'litellm[proxy]'
 fi
 
 # ---- 4. Fonts --------------------------------------------------------------
