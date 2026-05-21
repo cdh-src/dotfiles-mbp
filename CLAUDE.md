@@ -58,7 +58,7 @@ When adding a new config file, place it inside the appropriate package with the 
   - `battery.sh` — Nerd Font MDI battery glyph + percent, with a separate icon family for charging vs discharging. Replaces the old `get_batt.sh` for tmux purposes; `get_batt.sh` is kept untouched in case anything else calls it.
   - `shorten_cwd.sh` — abbreviates parent dirs (`~/code/dotfiles-mbp` → `~/c/dotfiles-mbp`). Currently unused in the status bar but kept for future reuse.
 
-- **Nord palette is duplicated across tmux + starship.** `tmux/dot-tmux.status.conf` and `starship/dot-config/starship.toml` (the `[palettes.nord]` block) both define the same hex codes. If you tweak a color, update both. The status helper scripts also embed these colors inline via `#[fg=#XXXXXX]` tags.
+- **Nord palette is duplicated across tmux, starship, and lualine.** `tmux/dot-tmux.status.conf`, `starship/dot-config/starship.toml` (the `[palettes.nord]` block), and `nvim/dot-config/nvim/lua/plugins/lualine.lua` (the `local nord = {...}` table) all define the same hex codes. If you tweak a color, update all three. The tmux status helper scripts also embed these colors inline via `#[fg=#XXXXXX]` tags.
 
 - **Starship `[env_var.STARSHIP_CMD_NUM]` depends on zsh.** `zsh/dot-zshrc` exports `STARSHIP_CMD_NUM=$HISTCMD` from a `precmd_functions` hook. The bracketed command number in the prompt will silently disappear if that hook is removed.
 

@@ -70,7 +70,8 @@ else
   branch_text="$branch"
 fi
 # `` is U+E0A0 nf-pl-branch.
-branch_display="${C_BRANCH}${branch_text}${C_RESET}"
+# branch_display="${C_BRANCH}${branch_text}${C_RESET}"
+branch_display="${C_BRANCH}${branch_text}${C_RESET}"
 
 # ---- Status segments -------------------------------------------------------
 typeset -a segments
