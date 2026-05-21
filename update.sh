@@ -23,7 +23,7 @@ files=( *(N/) )
 fail=0
 for file in $files; do
   echo "Updating: $file"
-  if ! stow --dotfiles --no-folding --target=$HOME "$file"; then
+  if ! stow --dotfiles --no-folding --target="$HOME" "$file"; then
     print -u2 "error: stow failed for package: $file"
     fail=1
   fi
