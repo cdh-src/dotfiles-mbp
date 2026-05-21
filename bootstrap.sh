@@ -5,8 +5,8 @@
 # this script will perform and why. If those two files ever disagree, the
 # doc is the source of truth — fix the script to match.
 #
-# This script is idempotent: re-running it on an already-set-up machine
-# is a no-op (everything is gated on a "is it already present?" check).
+# This script is safe to re-run: it is idempotent with respect to installs
+# because everything is gated on an "is it already present?" check.
 #
 # It does NOT:
 #   - touch ~/.zshsecrets (you create that manually; see PREREQUISITES.md §5)
