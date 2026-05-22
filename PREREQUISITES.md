@@ -28,7 +28,7 @@ Without these, parts of the prompt/status bar/editor go silent or error.
 | Tool | Used by | Install |
 |------|---------|---------|
 | **tmux** | `tmux/dot-tmux.conf` | via `brew bundle` (see [`Brewfile`](./Brewfile)). |
-| **tpack** | `tmux/dot-tmux.conf` runs `tpack init` to load tmux plugins (nord-tmux, tmux-sensible, vim-tmux-navigator). | via `brew bundle` (taps `tmuxpack/tpack`). |
+| **tpack** | `tmux/dot-tmux.conf` runs `tpack init` to load tmux plugins (tmux-sensible, vim-tmux-navigator). | via `brew bundle` (taps `tmuxpack/tpack`). |
 | **starship** | The shell prompt (`zsh/dot-zshrc` calls `starship init zsh`). | via `brew bundle`. |
 | **neovim** | `nvim/dot-config/nvim/`. `init.lua` is the entry point; lazy.nvim self-bootstraps from git on first run. | via `brew bundle`. |
 | **ghostty** | `ghostty/dot-config/ghostty/config.ghostty` | via `brew bundle` (cask). |
