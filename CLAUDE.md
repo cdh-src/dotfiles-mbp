@@ -32,7 +32,11 @@ When adding a new config file, place it inside the appropriate package with the 
 ./update.sh        # Re-stow every package in the repo to $HOME (idempotent)
 ```
 
-`update.sh` iterates the top-level directories and runs `stow --dotfiles --no-folding --target=$HOME <pkg>` for each. It exits non-zero if any stow invocation fails. Run it after adding a new package directory or after a fresh checkout.
+`update.sh` iterates the top-level directories and runs `stow -R --dotfiles --no-folding --target=$HOME <pkg>` for each (the `-R` restows, so renamed or removed files don't leave dangling symlinks in `$HOME`). It exits non-zero if any stow invocation fails. Run it after adding a new package directory or after a fresh checkout.
+
+Top-level directories are auto-discovered as stow packages. Add non-package dirs (e.g. `scripts/`) to the `STOW_IGNORE` set at the top of `update.sh`.
+
+**Retiring a package.** Stow cannot unstow what no longer exists in the source tree. To remove a package cleanly, run `stow -D --dotfiles --no-folding --target=$HOME <pkg>` first, then delete the package directory.
 
 ## Key wiring to be aware of
 
