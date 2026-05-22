@@ -6,7 +6,8 @@
 # installs those conditionally only if `command -v` reports them missing.
 #
 # Sync rule (see PREREQUISITES.md): adding a new brew dep to the repo means
-# adding a line here. `brew bundle check --file=./Brewfile` is the drift test.
+# adding a line here. From the repo root, `brew bundle check --file=./Brewfile`
+# is the drift test.
 
 tap "tmuxpack/tpack"
 
