@@ -54,7 +54,7 @@ Top-level directories are auto-discovered as stow packages. Add non-package dirs
   - `git_branch.sh` — full git status segment ( + branch + ahead/behind/staged/unstaged/untracked/conflicts/stash with counts). Empty outside a repo.
   - `battery.sh` — Nerd Font MDI battery glyph + percent, with a separate icon family for charging vs discharging.
 
-- **Nord palette is duplicated across tmux, starship, and lualine.** `tmux/dot-tmux.status.conf`, `starship/dot-config/starship.toml` (the `[palettes.nord]` block), and `nvim/dot-config/nvim/lua/plugins/lualine.lua` (the `local nord = {...}` table) all define the same hex codes. If you tweak a color, update all three. The tmux status helper scripts also embed these colors inline via `#[fg=#XXXXXX]` tags.
+- **Nord palette is deliberately duplicated across tmux, starship, and lualine.** `tmux/dot-tmux.status.conf`, `tmux/dot-config/tmux/git_branch.sh`, `starship/dot-config/starship.toml` (the `[palettes.nord]` block), and `nvim/dot-config/nvim/lua/plugins/lualine.lua` (the `local nord = {...}` table) all define the same hex codes. This is a deliberate trade-off — ten stable hex codes do not warrant a templating/build step. `scripts/lint-palette.sh` is the drift detector: it asserts every hex in those consumers is in the canonical Nord set, and that every canonical color is used by someone. Run it (or `scripts/lint.sh`) after touching any colored config.
 
 - **Starship `[env_var.STARSHIP_CMD_NUM]` depends on zsh.** `zsh/dot-zshrc` exports `STARSHIP_CMD_NUM=$HISTCMD` from a `precmd_functions` hook. The bracketed command number in the prompt will silently disappear if that hook is removed.
 

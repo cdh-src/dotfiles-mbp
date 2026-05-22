@@ -35,6 +35,7 @@ Without these, parts of the prompt/status bar/editor go silent or error.
 | **lsd** | `alias ls=lsd` in `dot-zshrc`. Without it, every `ls` errors. | via `brew bundle`. |
 | **zoxide** | Loaded as a Zinit plugin in `dot-zshrc`. Provides smarter `cd`. | via `brew bundle`. |
 | **python3** | Used directly by a few small helper scripts. | Pre-installed on modern macOS. `bootstrap.sh` falls back to `brew install python3` only if `command -v python3` reports it missing. |
+| **shellcheck** | `scripts/lint.sh` runs it on the bash scripts (`bootstrap.sh`, lint scripts) as part of `./scripts/lint.sh`. Not required for the dotfiles to work; only needed if you run lint locally. | via `brew bundle`. |
 
 ## 3. Fonts
 
