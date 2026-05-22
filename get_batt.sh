@@ -1,3 +1,7 @@
 #!/bin/zsh
+# Print the current battery percentage as "NN%" (or nothing on desktops
+# where AppleSmartBattery is absent).
 
-pmset -g batt | grep "[0-9][0-9]%" | awk 'NR==1{print$3}' | cut -c 1-3
+/usr/sbin/ioreg -rn AppleSmartBattery -d 1 2>/dev/null | awk -F' = ' '
+  /"CurrentCapacity"/ { printf "%s%%\n", $2; exit }
+'
