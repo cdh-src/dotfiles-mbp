@@ -9,7 +9,7 @@ On a fresh machine:
 1. Clone this repo somewhere (e.g. `~/code/dotfiles-mbp`).
 2. Read [`PREREQUISITES.md`](./PREREQUISITES.md) to see what gets installed.
 3. Optionally run `./bootstrap.sh` to install everything via Homebrew. Idempotent.
-4. Create `~/.zshsecrets` per PREREQUISITES.md §5.
+4. (Optional) Create `~/.zshsecrets` per PREREQUISITES.md §5.
 5. Run `./update.sh` to symlink configs into `$HOME`.
 6. Restart your shell.
 

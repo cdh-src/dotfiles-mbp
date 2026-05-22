@@ -34,8 +34,6 @@ This script installs everything PREREQUISITES.md describes:
   - Homebrew (if missing)
   - zsh and python3 (only if not already on PATH — macOS ships both)
   - Everything in ./Brewfile (formulae, taps, casks, fonts)
-  - LiteLLM: `uv tool install --python 3.13 'litellm[proxy]'`
-            (Python pin matters; newer Pythons have broken proxy deps)
 
 It does NOT create ~/.zshsecrets or run ./update.sh —
 do those steps manually after this finishes.
@@ -95,23 +93,7 @@ fi
 bold "3. Brewfile (brew bundle)"
 brew bundle --file="$script_dir/Brewfile"
 
-# ---- 4. LiteLLM ------------------------------------------------------------
-#
-# LiteLLM is a Python package installed via uv into an isolated venv.
-# IMPORTANT: pin Python to 3.13 — some of LiteLLM's proxy dependencies have
-# historically lagged on newer Python releases and produce import errors
-# otherwise. The [proxy] extras (uvicorn, fastapi, etc.) are required for
-# ai_proxy.sh to work.
-
-bold "4. LiteLLM (via uv, pinned to Python 3.13)"
-if have litellm; then
-  info "✓ litellm already installed at: $(command -v litellm)"
-else
-  info "installing litellm via uv tool install…"
-  uv tool install --python 3.13 'litellm[proxy]'
-fi
-
-# ---- 5. Done ---------------------------------------------------------------
+# ---- 4. Done ---------------------------------------------------------------
 
 cat <<'EOF'
 
@@ -121,8 +103,8 @@ cat <<'EOF'
 
 Next steps (manual):
 
-  1. Create ~/.zshsecrets and add:
-       export ANTHROPIC_AUTH_TOKEN='paste-a-random-string-here'
+  1. (Optional) Create ~/.zshsecrets if you have machine-local env vars
+     you don't want to commit. See PREREQUISITES.md §5.
 
   2. Run ./update.sh to stow all config files into $HOME.
 

@@ -36,14 +36,11 @@ When adding a new config file, place it inside the appropriate package with the 
 
 ```sh
 ./get_batt.sh      # Print current battery percentage (legacy; tmux now uses tmux/dot-config/tmux/battery.sh)
-./litellm/ai_proxy.sh   # Launch the local LiteLLM proxy on 127.0.0.1:4000
 ```
 
 ## Key wiring to be aware of
 
-- **Claude Code → LiteLLM proxy.** `zsh/dot-zshrc` sets `ANTHROPIC_BASE_URL=http://127.0.0.1:4000` and pins `ANTHROPIC_DEFAULT_{OPUS,SONNET,HAIKU}_MODEL` to the names defined in `litellm/dot-config/litellm_config.yaml`. The proxy maps those names onto `github_copilot/...` backends. If you rename a model in the LiteLLM config you must also update the matching `ANTHROPIC_DEFAULT_*_MODEL` env var, or Claude Code will request a model the proxy doesn't expose. The proxy's `master_key` is read from `ANTHROPIC_AUTH_TOKEN` (sourced from `~/.zshsecrets`, which is not in this repo).
-
-- **Secrets.** `~/.zshsecrets` is sourced at the end of `dot-zshrc` if present. Do not commit it; it is intentionally outside the repo.
+- **Secrets.** `~/.zshsecrets` is sourced at the end of `dot-zshrc` if present. Do not commit it; it is intentionally outside the repo. The repo currently has no required secrets — the hook exists so machine-local env vars can be added without committing them.
 
 - **Shell plugin manager.** Zsh uses Zinit, which self-installs on first shell start if missing — there is no separate bootstrap step beyond running `update.sh` and starting a new shell.
 
