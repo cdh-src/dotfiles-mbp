@@ -6,6 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Personal dotfiles for macOS, deployed to `$HOME` via GNU `stow`. The repo name still mentions `mbp` for historical reasons, but the configs are written to work on any modern Mac (Apple Silicon or Intel) after the prerequisites are installed.
 
+### Why stow (and not chezmoi/yadm)
+
+Considered and deliberately not adopted:
+
+- **chezmoi** — gives templating, native secrets, and per-host config. Overkill here: there's only one machine, the Nord palette duplication is small and policed by `scripts/lint-palette.sh`, and the `~/.zshsecrets` hook is enough for machine-local env vars. The "everything is a symlink you can `ls -l`" simplicity of stow is a feature worth keeping. Revisit chezmoi if multiple machines start needing meaningfully different configs.
+- **yadm / bare git** — same trade-offs as stow plus less obvious file mapping.
+
 ## Prerequisites & bootstrapping
 
 Before `./update.sh` will produce a working environment on a fresh machine, the tools, fonts, and secrets listed in **`PREREQUISITES.md`** must be installed. Read that file first.
