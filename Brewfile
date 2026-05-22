@@ -18,7 +18,6 @@ brew "starship"
 brew "neovim"
 brew "lsd"
 brew "zoxide"
-brew "uv"
 
 cask "ghostty"
 cask "font-0xproto-nerd-font"

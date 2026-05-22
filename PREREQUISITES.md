@@ -34,8 +34,6 @@ Without these, parts of the prompt/status bar/editor go silent or error.
 | **ghostty** | `ghostty/dot-config/ghostty/config.ghostty` | via `brew bundle` (cask). |
 | **lsd** | `alias ls=lsd` in `dot-zshrc`. Without it, every `ls` errors. | via `brew bundle`. |
 | **zoxide** | Loaded as a Zinit plugin in `dot-zshrc`. Provides smarter `cd`. | via `brew bundle`. |
-| **uv** | Python toolchain manager used to install LiteLLM in an isolated venv pinned to a specific Python version. | via `brew bundle`. |
-| **litellm** | `litellm/ai_proxy.sh` launches a LiteLLM server that fronts the GitHub Copilot Claude models for Claude Code. The `[proxy]` extras (uvicorn, fastapi, etc.) are required for the server. **Pin Python to 3.13** — some of LiteLLM's proxy dependencies have lagged on newer Python versions and produce import errors otherwise. | Not in the Brewfile (uv-managed). `bootstrap.sh` runs `uv tool install --python 3.13 'litellm[proxy]'`. |
 | **python3** | Used directly by a few small helper scripts. | Pre-installed on modern macOS. `bootstrap.sh` falls back to `brew install python3` only if `command -v python3` reports it missing. |
 
 ## 3. Fonts
@@ -58,22 +56,9 @@ After everything's installed, the first launch of each tool may take a minute wh
 
 ## 5. Secrets file
 
-`zsh/dot-zshrc` sources `~/.zshsecrets` if present. This file is **intentionally outside the repo** — never commit it.
+`zsh/dot-zshrc` sources `~/.zshsecrets` if present. The file is **intentionally outside the repo** — never commit it.
 
-At minimum it must export:
-
-```zsh
-# ~/.zshsecrets
-export ANTHROPIC_AUTH_TOKEN='paste-litellm-master-key-here'
-```
-
-`ANTHROPIC_AUTH_TOKEN` is consumed by:
-- `litellm/dot-config/litellm_config.yaml` as the LiteLLM proxy's `master_key`.
-- Claude Code, which uses the same token to talk to the proxy at `http://127.0.0.1:4000`.
-
-Pick any random string for the value — it's a shared secret between Claude Code and the LiteLLM proxy running locally on the same machine. The proxy doesn't validate it against an external service.
-
-For LiteLLM to talk to GitHub Copilot's backend, you'll also need a Copilot subscription with the relevant Claude models available. LiteLLM handles the underlying GitHub auth flow itself the first time it runs.
+The repo currently has no required secrets; the hook is kept so you can add machine-local environment variables (API keys, tokens, machine-specific overrides) without committing them. If you don't need any, you can skip creating the file entirely.
 
 ## 6. Manual post-install
 
@@ -81,9 +66,8 @@ A few things `bootstrap.sh` and `update.sh` can't do for you:
 
 1. **Set Ghostty as the default terminal.** Open Ghostty, then in System Settings (or the Ghostty menu) make it the default.
 2. **Accessibility permission** if you use the vim-tmux-navigator key chord through `C-h/j/k/l` and it doesn't work — macOS may prompt for accessibility access for Ghostty.
-3. **Sign in to GitHub Copilot** the first time LiteLLM proxies a request. LiteLLM will print a device-flow URL to the terminal.
-4. **Run `./update.sh`** to stow all the config files into `$HOME`.
-5. **Restart your shell** so `dot-zprofile` (Homebrew shellenv) and `dot-zshrc` (Zinit, starship, vi mode) all take effect.
+3. **Run `./update.sh`** to stow all the config files into `$HOME`.
+4. **Restart your shell** so `dot-zprofile` (Homebrew shellenv) and `dot-zshrc` (Zinit, starship, vi mode) all take effect.
 
 ---
 
