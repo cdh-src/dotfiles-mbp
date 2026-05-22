@@ -1,12 +1,12 @@
 #!/bin/bash
 # Bootstrap a fresh Mac with everything PREREQUISITES.md describes.
 #
-# READ PREREQUISITES.md BEFORE RUNNING THIS. The file lists every install
-# this script will perform and why. If those two files ever disagree, the
-# doc is the source of truth — fix the script to match.
+# READ PREREQUISITES.md BEFORE RUNNING THIS. If this script and the doc ever
+# disagree, the doc is the source of truth — fix the script (and the
+# Brewfile) to match.
 #
-# This script is safe to re-run: it is idempotent with respect to installs
-# because everything is gated on an "is it already present?" check.
+# This script is safe to re-run: `brew bundle` and the conditional installs
+# below are all idempotent.
 #
 # It does NOT:
 #   - touch ~/.zshsecrets (you create that manually; see PREREQUISITES.md §5)
@@ -16,44 +16,11 @@ set -euo pipefail
 
 # ---- Helpers ---------------------------------------------------------------
 
-bold()  { printf '\033[1m%s\033[0m\n' "$*"; }
-info()  { printf '  %s\n' "$*"; }
-warn()  { printf '\033[33m  warning: %s\033[0m\n' "$*" >&2; }
-have()  { command -v "$1" >/dev/null 2>&1; }
+bold() { printf '\033[1m%s\033[0m\n' "$*"; }
+info() { printf '  %s\n' "$*"; }
+have() { command -v "$1" >/dev/null 2>&1; }
 
-# brew_install <formula>          installs if not already present
-brew_install() {
-  local formula=$1
-  if brew list --formula "$formula" >/dev/null 2>&1; then
-    info "✓ $formula already installed"
-  else
-    info "installing $formula…"
-    brew install "$formula"
-  fi
-}
-
-# brew_cask_install <cask>        installs if not already present
-brew_cask_install() {
-  local cask=$1
-  if brew list --cask "$cask" >/dev/null 2>&1; then
-    info "✓ $cask already installed"
-  else
-    info "installing cask $cask…"
-    brew install --cask "$cask"
-  fi
-}
-
-# brew_tap_install <tap> <formula>
-brew_tap_install() {
-  local tap=$1 formula=$2
-  if brew list --formula "$formula" >/dev/null 2>&1; then
-    info "✓ $formula already installed"
-  else
-    info "tapping $tap and installing $formula…"
-    brew tap "$tap" >/dev/null 2>&1 || true
-    brew install "$formula"
-  fi
-}
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 
 # ---- Banner ----------------------------------------------------------------
 
@@ -65,12 +32,10 @@ cat <<'EOF'
 
 This script installs everything PREREQUISITES.md describes:
   - Homebrew (if missing)
-  - Hard requirements: git, stow, zsh
-  - Config tools:     tmux, tpack, starship, neovim, ghostty,
-                      lsd, zoxide, python3, uv
-  - LiteLLM:          via `uv tool install --python 3.13 'litellm[proxy]'`
-                      (Python pin matters; newer Pythons have broken proxy deps)
-  - Font:             0xProto Nerd Font
+  - zsh and python3 (only if not already on PATH — macOS ships both)
+  - Everything in ./Brewfile (formulae, taps, casks, fonts)
+  - LiteLLM: `uv tool install --python 3.13 'litellm[proxy]'`
+            (Python pin matters; newer Pythons have broken proxy deps)
 
 It does NOT create ~/.zshsecrets or run ./update.sh —
 do those steps manually after this finishes.
@@ -96,7 +61,7 @@ else
   info "installing Homebrew…"
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   # Load brew into PATH for the rest of this script — eval the shellenv from
-  # whichever prefix the installer chose.
+  # whichever prefix the installer chose (Apple Silicon vs Intel).
   for brew_bin in /opt/homebrew/bin/brew /usr/local/bin/brew; do
     if [[ -x $brew_bin ]]; then
       eval "$($brew_bin shellenv)"
@@ -105,48 +70,46 @@ else
   done
 fi
 
-# ---- 2. Hard requirements --------------------------------------------------
+# ---- 2. System-shipped tools, install only if missing ----------------------
+#
+# zsh and python3 ship with modern macOS. Installing them via brew would
+# shadow the system binaries (Homebrew's bin dir precedes /usr/bin in PATH),
+# so we only fall back to brew when the system copy is genuinely absent.
 
-bold "2. Hard requirements"
-brew_install git
-brew_install stow
-# zsh ships with modern macOS; only install if missing.
+bold "2. System-shipped tools"
 if have zsh; then
   info "✓ zsh already present at: $(command -v zsh)"
 else
-  brew_install zsh
+  info "installing zsh…"
+  brew install zsh
+fi
+if have python3; then
+  info "✓ python3 already present at: $(command -v python3)"
+else
+  info "installing python3…"
+  brew install python3
 fi
 
-# ---- 3. Config tools -------------------------------------------------------
+# ---- 3. Brewfile -----------------------------------------------------------
 
-bold "3. Config tools"
-brew_install tmux
-brew_tap_install tmuxpack/tpack tpack
-brew_install starship
-brew_install neovim
-brew_cask_install ghostty
-brew_install lsd
-brew_install zoxide
-brew_install python3
-brew_install uv
+bold "3. Brewfile (brew bundle)"
+brew bundle --file="$script_dir/Brewfile"
 
+# ---- 4. LiteLLM ------------------------------------------------------------
+#
 # LiteLLM is a Python package installed via uv into an isolated venv.
 # IMPORTANT: pin Python to 3.13 — some of LiteLLM's proxy dependencies have
 # historically lagged on newer Python releases and produce import errors
 # otherwise. The [proxy] extras (uvicorn, fastapi, etc.) are required for
 # ai_proxy.sh to work.
-bold "  LiteLLM (via uv, pinned to Python 3.13)"
+
+bold "4. LiteLLM (via uv, pinned to Python 3.13)"
 if have litellm; then
   info "✓ litellm already installed at: $(command -v litellm)"
 else
   info "installing litellm via uv tool install…"
   uv tool install --python 3.13 'litellm[proxy]'
 fi
-
-# ---- 4. Fonts --------------------------------------------------------------
-
-bold "4. Fonts"
-brew_cask_install font-0xproto-nerd-font
 
 # ---- 5. Done ---------------------------------------------------------------
 

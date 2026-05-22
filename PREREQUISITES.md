@@ -17,9 +17,9 @@ Without these, `./update.sh` fails or core configs don't load.
 | Tool | Why | Install |
 |------|-----|---------|
 | **Homebrew** | Everything else installs through it. | `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"` |
-| **git** | Stow doesn't need it, but Zinit and lazy.nvim self-bootstrap by cloning their repos on first run. | Comes with Xcode CLT (`xcode-select --install`) or `brew install git`. |
-| **GNU stow** | `update.sh` is a stow wrapper; needs the `--dotfiles` flag (stow ≥ 2.3.1, 2015). | `brew install stow` |
-| **zsh** | The default macOS login shell since Catalina; `update.sh` and `dot-zprofile` use zsh idioms (`${0:A:h}`, glob qualifiers). | Pre-installed on modern macOS. If absent: `brew install zsh`. |
+| **git** | Stow doesn't need it, but Zinit and lazy.nvim self-bootstrap by cloning their repos on first run. | via `brew bundle` (see [`Brewfile`](./Brewfile)). |
+| **GNU stow** | `update.sh` is a stow wrapper; needs the `--dotfiles` flag (stow ≥ 2.3.1, 2015). | via `brew bundle`. |
+| **zsh** | The default macOS login shell since Catalina; `update.sh` and `dot-zprofile` use zsh idioms (`${0:A:h}`, glob qualifiers). | Pre-installed on modern macOS. `bootstrap.sh` falls back to `brew install zsh` only if `command -v zsh` reports it missing. |
 
 ## 2. Tools used by configs
 
@@ -27,22 +27,22 @@ Without these, parts of the prompt/status bar/editor go silent or error.
 
 | Tool | Used by | Install |
 |------|---------|---------|
-| **tmux** | `tmux/dot-tmux.conf` | `brew install tmux` |
-| **tpack** | `tmux/dot-tmux.conf` runs `tpack init` to load tmux plugins (nord-tmux, tmux-sensible, vim-tmux-navigator). | `brew install tmuxpack/tpack/tpack` |
-| **starship** | The shell prompt (`zsh/dot-zshrc` calls `starship init zsh`). | `brew install starship` |
-| **neovim** | `nvim/dot-config/nvim/`. `init.lua` is the entry point; lazy.nvim self-bootstraps from git on first run. | `brew install neovim` |
-| **ghostty** | `ghostty/dot-config/ghostty/config.ghostty` | `brew install --cask ghostty` |
-| **lsd** | `alias ls=lsd` in `dot-zshrc`. Without it, every `ls` errors. | `brew install lsd` |
-| **zoxide** | Loaded as a Zinit plugin in `dot-zshrc`. Provides smarter `cd`. | `brew install zoxide` |
-| **uv** | Python toolchain manager used to install LiteLLM in an isolated venv pinned to a specific Python version. | `brew install uv` |
-| **litellm** | `litellm/ai_proxy.sh` launches a LiteLLM server that fronts the GitHub Copilot Claude models for Claude Code. The `[proxy]` extras (uvicorn, fastapi, etc.) are required for the server. **Pin Python to 3.13** — some of LiteLLM's proxy dependencies have lagged on newer Python versions and produce import errors otherwise. | `uv tool install --python 3.13 'litellm[proxy]'` |
-| **python3** | Used directly by a few small helper scripts. | Pre-installed on modern macOS; otherwise `brew install python3`. |
+| **tmux** | `tmux/dot-tmux.conf` | via `brew bundle` (see [`Brewfile`](./Brewfile)). |
+| **tpack** | `tmux/dot-tmux.conf` runs `tpack init` to load tmux plugins (nord-tmux, tmux-sensible, vim-tmux-navigator). | via `brew bundle` (taps `tmuxpack/tpack`). |
+| **starship** | The shell prompt (`zsh/dot-zshrc` calls `starship init zsh`). | via `brew bundle`. |
+| **neovim** | `nvim/dot-config/nvim/`. `init.lua` is the entry point; lazy.nvim self-bootstraps from git on first run. | via `brew bundle`. |
+| **ghostty** | `ghostty/dot-config/ghostty/config.ghostty` | via `brew bundle` (cask). |
+| **lsd** | `alias ls=lsd` in `dot-zshrc`. Without it, every `ls` errors. | via `brew bundle`. |
+| **zoxide** | Loaded as a Zinit plugin in `dot-zshrc`. Provides smarter `cd`. | via `brew bundle`. |
+| **uv** | Python toolchain manager used to install LiteLLM in an isolated venv pinned to a specific Python version. | via `brew bundle`. |
+| **litellm** | `litellm/ai_proxy.sh` launches a LiteLLM server that fronts the GitHub Copilot Claude models for Claude Code. The `[proxy]` extras (uvicorn, fastapi, etc.) are required for the server. **Pin Python to 3.13** — some of LiteLLM's proxy dependencies have lagged on newer Python versions and produce import errors otherwise. | Not in the Brewfile (uv-managed). `bootstrap.sh` runs `uv tool install --python 3.13 'litellm[proxy]'`. |
+| **python3** | Used directly by a few small helper scripts. | Pre-installed on modern macOS. `bootstrap.sh` falls back to `brew install python3` only if `command -v python3` reports it missing. |
 
 ## 3. Fonts
 
 | Font | Why | Install |
 |------|-----|---------|
-| **0xProto Nerd Font** | Set as `font-family` in `ghostty/dot-config/ghostty/config.ghostty`. Also: the tmux status bar uses Nerd Font Material Design Icons (battery, git glyphs) and Powerline glyphs (` `). Without a Nerd Font, all of those render as tofu. | `brew install --cask font-0xproto-nerd-font` |
+| **0xProto Nerd Font** | Set as `font-family` in `ghostty/dot-config/ghostty/config.ghostty`. Also: the tmux status bar uses Nerd Font Material Design Icons (battery, git glyphs) and Powerline glyphs (` `). Without a Nerd Font, all of those render as tofu. | via `brew bundle` (cask). |
 
 ## 4. Plugin managers
 
@@ -89,4 +89,9 @@ A few things `bootstrap.sh` and `update.sh` can't do for you:
 
 ## Keeping this file in sync
 
-If you add a new external dependency to any config (a new brew formula, a new font, a new tmux plugin, a new shell tool), update both **this file** and **`bootstrap.sh`** in the same commit. The two are meant to be reviewable against each other. CLAUDE.md restates this rule for any future automated changes.
+If you add a new external dependency to any config, update the right file:
+
+- **Brew-installable** (formula, tap, cask, font cask) → add a line to [`Brewfile`](./Brewfile) and a row to the relevant table above.
+- **Not brew-installable** (uv tool, manual step) → add it to `bootstrap.sh` and the table above.
+
+`brew bundle check --file=./Brewfile` is the drift test for the brew portion. CLAUDE.md restates this rule for any future automated changes.

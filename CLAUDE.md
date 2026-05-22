@@ -10,9 +10,9 @@ Personal dotfiles for macOS, deployed to `$HOME` via GNU `stow`. The repo name s
 
 Before `./update.sh` will produce a working environment on a fresh machine, the tools, fonts, and secrets listed in **`PREREQUISITES.md`** must be installed. Read that file first.
 
-`./bootstrap.sh` automates the brew installs listed there. It's intentionally NOT invoked by `update.sh` — run it explicitly only after reviewing the prerequisites doc.
+`./bootstrap.sh` automates the brew installs listed there (via a `Brewfile` consumed by `brew bundle`). It's intentionally NOT invoked by `update.sh` — run it explicitly only after reviewing the prerequisites doc.
 
-> **Keep PREREQUISITES.md and bootstrap.sh in sync.** When any change to this repo introduces a new external dependency (a brew formula, a Nerd Font glyph from a new font, a new shell tool, a new tmux plugin, a new Python package, etc.), update both files in the same commit. Claude must update both whenever it observes or makes such a change, even when the change is small. The doc is the source of truth — the script is meant to be reviewable against it.
+> **Keep PREREQUISITES.md, `Brewfile`, and `bootstrap.sh` in sync.** When any change to this repo introduces a new external dependency, update the right file(s) in the same commit: brew-installable items go in `Brewfile`, non-brew items (uv tools, manual steps) go in `bootstrap.sh`, and both should be reflected in PREREQUISITES.md. The doc is the source of truth. `brew bundle check --file=./Brewfile` validates the brew portion against the installed state. Claude must follow this rule whenever it observes or makes such a change, even when the change is small.
 
 ## Layout convention (stow)
 
