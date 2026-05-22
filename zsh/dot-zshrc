@@ -50,9 +50,8 @@ eval "$(starship init zsh)"
 
 bindkey -v
 
-export PATH="$HOME/.local/bin:$PATH"
-
-export EDITOR=vim
+# PATH, EDITOR, VISUAL, HOMEBREW_NO_ANALYTICS live in dot-zshenv so they
+# apply to non-interactive shells too.
 
 # Secrets
 [[ -f ~/.zshsecrets ]] && source ~/.zshsecrets
