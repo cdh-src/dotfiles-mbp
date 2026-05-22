@@ -3,7 +3,7 @@
 # matching the current battery level, a space, then the percentage.
 #
 # The icon family switches between charging and discharging based on
-# `pmset -g batt`. Buckets are 10% wide.
+# IOKit's AppleSmartBattery service. Buckets are 10% wide.
 #
 # Discharging: complete 0-9..90-100 series (f0079, f007a..f0082).
 # Charging:    f0085 (full), f089d (80), f008b..f0086 (70..20), f089c (10).
@@ -12,24 +12,24 @@
 
 set -u
 
-line=$(pmset -g batt 2>/dev/null | sed -n '2p')
-pct=$(printf '%s' "$line" | grep -oE '[0-9]+%' | head -1 | tr -d '%')
+# AppleSmartBattery is absent on desktop Macs; on those, awk emits nothing,
+# pct stays empty, and the script exits 0 so the tmux segment collapses.
+read pct charging external <<<"$(
+  /usr/sbin/ioreg -rn AppleSmartBattery -d 1 2>/dev/null | awk -F' = ' '
+    /"CurrentCapacity"/   { pct = $2 }
+    /"IsCharging"/        { ch  = $2 }
+    /"ExternalConnected"/ { ex  = $2 }
+    END { if (pct != "") print pct, ch, ex }
+  '
+)"
 [[ -z "$pct" ]] && exit 0
 
-# Detect charging state. pmset strings contain:
-#   "discharging"           → on battery
-#   "charging"              → plugged in, charging
-#   "not charging present"  → plugged in, full (or paused by macOS)
-#   "charged"               → plugged in, full
-# The match order matters: check "discharging" / "not charging" before "charging".
-case "$line" in
-  *"discharging"*)   state=discharging ;;
-  *"not charging"*)  state=charging ;;  # treat as topped-off
-  *"charged"*)       state=charging ;;
-  *"charging"*)      state=charging ;;
-  *"AC attached"*)   state=charging ;;
-  *)                 state=discharging ;;
-esac
+# Treat both "actively charging" and "plugged in but topped off" as charging.
+if [[ "$charging" == "Yes" || "$external" == "Yes" ]]; then
+  state=charging
+else
+  state=discharging
+fi
 
 # Bucket: 0..9, capped.
 bucket=$(( pct / 10 ))
