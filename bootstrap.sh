@@ -20,6 +20,24 @@ bold() { printf '\033[1m%s\033[0m\n' "$*"; }
 info() { printf '  %s\n' "$*"; }
 have() { command -v "$1" >/dev/null 2>&1; }
 
+usage() {
+  cat <<'USAGE'
+Usage: ./bootstrap.sh [-y|--yes] [-h|--help]
+
+  -y, --yes    Skip the interactive confirmation prompt.
+  -h, --help   Show this help.
+USAGE
+}
+
+assume_yes=0
+while (( $# > 0 )); do
+  case "$1" in
+    -y|--yes) assume_yes=1; shift ;;
+    -h|--help) usage; exit 0 ;;
+    *) echo "unknown option: $1" >&2; usage >&2; exit 2 ;;
+  esac
+done
+
 script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 
 # ---- Banner ----------------------------------------------------------------
@@ -43,11 +61,15 @@ PREREQUISITES.md.
 
 EOF
 
-read -r -p "Continue? [y/N] " reply
-case "$reply" in
-  [yY]|[yY][eE][sS]) ;;
-  *) echo "aborted."; exit 1 ;;
-esac
+if (( assume_yes )); then
+  info "--yes given; skipping confirmation."
+else
+  read -r -p "Continue? [y/N] " reply
+  case "$reply" in
+    [yY]|[yY][eE][sS]) ;;
+    *) echo "aborted."; exit 1 ;;
+  esac
+fi
 
 # ---- 1. Homebrew -----------------------------------------------------------
 

@@ -1,0 +1,18 @@
+# Sourced by every zsh invocation (interactive, non-interactive, login, scripts,
+# `ssh user@host cmd`). Keep this tiny and side-effect-free.
+#
+# Login-only setup (Homebrew shellenv) stays in dot-zprofile.
+# Interactive-only setup (Zinit, starship, aliases, keybindings) stays in dot-zshrc.
+
+export HOMEBREW_NO_ANALYTICS=1
+
+# Editor: prefer Neovim. The `alias vim=nvim` in dot-zshrc is interactive-only,
+# so EDITOR must point at the real binary or non-interactive shells (git
+# commit -e, sudoedit, crontab -e over ssh) launch the wrong editor.
+export EDITOR=nvim
+export VISUAL=nvim
+
+# Prepend ~/.local/bin to PATH. `typeset -U path` de-dupes, so re-sourcing
+# this file (or nested shells) doesn't accumulate duplicate entries.
+typeset -U path
+path=("$HOME/.local/bin" $path)

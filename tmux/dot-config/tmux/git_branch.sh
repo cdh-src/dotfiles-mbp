@@ -69,8 +69,7 @@ if [[ "$branch" == "(detached)" ]]; then
 else
   branch_text="$branch"
 fi
-# `` is U+E0A0 nf-pl-branch.
-# branch_display="${C_BRANCH}${branch_text}${C_RESET}"
+# Branch glyph is U+E725 (nf-dev-git_branch).
 branch_display="${C_BRANCH}${branch_text}${C_RESET}"
 
 # ---- Status segments -------------------------------------------------------
@@ -83,9 +82,18 @@ typeset -a segments
 (( conflicts > 0 )) && segments+=("${C_CONFLICT}⚔${conflicts}")
 (( stash > 0 ))     && segments+=("${C_STASH}⚑${stash}")
 
+# Leading separator is emitted by this script (not the surrounding tmux
+# format) so status-left invokes us once per refresh instead of twice (one
+# call for the conditional, one for the output). The SEP value mirrors
+# the %hidden SEP in dot-tmux.status.conf -- tmux re-expands format
+# directives (#[...] styles and #{?...} conditionals) inside #() output
+# in status-line context, so the client_prefix-aware glyph/color swap
+# still works when this is emitted from the helper.
+SEP=" #[fg=#4c566a]#{?client_prefix,#[fg=#b48ead],}#[fg=#d8dee9]  "
+
 if (( ${#segments[@]} > 0 )); then
   inside="${(j: :)segments}"
-  print -- "${branch_display} ${inside}${C_RESET}"
+  print -- "${SEP}${branch_display} ${inside}${C_RESET}"
 else
-  print -- "${branch_display}"
+  print -- "${SEP}${branch_display}${C_RESET}"
 fi

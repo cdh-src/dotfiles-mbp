@@ -6,6 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Personal dotfiles for macOS, deployed to `$HOME` via GNU `stow`. The repo name still mentions `mbp` for historical reasons, but the configs are written to work on any modern Mac (Apple Silicon or Intel) after the prerequisites are installed.
 
+### Why stow (and not chezmoi/yadm)
+
+Considered and deliberately not adopted:
+
+- **chezmoi** — gives templating, native secrets, and per-host config. Overkill here: there's only one machine, the Nord palette duplication is small and policed by `scripts/lint-palette.sh`, and the `~/.zshsecrets` hook is enough for machine-local env vars. The "everything is a symlink you can `ls -l`" simplicity of stow is a feature worth keeping. Revisit chezmoi if multiple machines start needing meaningfully different configs.
+- **yadm / bare git** — same trade-offs as stow plus less obvious file mapping.
+
 ## Prerequisites & bootstrapping
 
 Before `./update.sh` will produce a working environment on a fresh machine, the tools, fonts, and secrets listed in **`PREREQUISITES.md`** must be installed. Read that file first.
@@ -32,11 +39,11 @@ When adding a new config file, place it inside the appropriate package with the 
 ./update.sh        # Re-stow every package in the repo to $HOME (idempotent)
 ```
 
-`update.sh` iterates the top-level directories and runs `stow --dotfiles --no-folding --target=$HOME <pkg>` for each. It exits non-zero if any stow invocation fails. Run it after adding a new package directory or after a fresh checkout.
+`update.sh` iterates the top-level directories and runs `stow -R --dotfiles --no-folding --target=$HOME <pkg>` for each (the `-R` restows, so renamed or removed files don't leave dangling symlinks in `$HOME`). It exits non-zero if any stow invocation fails. Run it after adding a new package directory or after a fresh checkout.
 
-```sh
-./get_batt.sh      # Print current battery percentage (legacy; tmux now uses tmux/dot-config/tmux/battery.sh)
-```
+Top-level directories are auto-discovered as stow packages. Add non-package dirs (e.g. `scripts/`) to the `STOW_IGNORE` set at the top of `update.sh`.
+
+**Retiring a package.** Stow cannot unstow what no longer exists in the source tree. To remove a package cleanly, run `stow -D --dotfiles --no-folding --target=$HOME <pkg>` first, then delete the package directory.
 
 ## Key wiring to be aware of
 
@@ -52,10 +59,9 @@ When adding a new config file, place it inside the appropriate package with the 
 
 - **tmux status helpers live in `tmux/dot-config/tmux/`** and are invoked via `#(~/.config/tmux/<script>.sh '#{pane_current_path}')` in `dot-tmux.status.conf`. Each emits empty output → the surrounding tmux conditional collapses the segment:
   - `git_branch.sh` — full git status segment ( + branch + ahead/behind/staged/unstaged/untracked/conflicts/stash with counts). Empty outside a repo.
-  - `battery.sh` — Nerd Font MDI battery glyph + percent, with a separate icon family for charging vs discharging. Replaces the old `get_batt.sh` for tmux purposes; `get_batt.sh` is kept untouched in case anything else calls it.
-  - `shorten_cwd.sh` — abbreviates parent dirs (`~/code/dotfiles-mbp` → `~/c/dotfiles-mbp`). Currently unused in the status bar but kept for future reuse.
+  - `battery.sh` — Nerd Font MDI battery glyph + percent, with a separate icon family for charging vs discharging.
 
-- **Nord palette is duplicated across tmux, starship, and lualine.** `tmux/dot-tmux.status.conf`, `starship/dot-config/starship.toml` (the `[palettes.nord]` block), and `nvim/dot-config/nvim/lua/plugins/lualine.lua` (the `local nord = {...}` table) all define the same hex codes. If you tweak a color, update all three. The tmux status helper scripts also embed these colors inline via `#[fg=#XXXXXX]` tags.
+- **Nord palette is deliberately duplicated across tmux, starship, and lualine.** `tmux/dot-tmux.status.conf`, `tmux/dot-config/tmux/git_branch.sh`, `starship/dot-config/starship.toml` (the `[palettes.nord]` block), and `nvim/dot-config/nvim/lua/plugins/lualine.lua` (the `local nord = {...}` table) all define the same hex codes. This is a deliberate trade-off — ten stable hex codes do not warrant a templating/build step. `scripts/lint-palette.sh` is the drift detector: it asserts every hex in those consumers is in the canonical Nord set, and that every canonical color is used by someone. Run it (or `scripts/lint.sh`) after touching any colored config.
 
 - **Starship `[env_var.STARSHIP_CMD_NUM]` depends on zsh.** `zsh/dot-zshrc` exports `STARSHIP_CMD_NUM=$HISTCMD` from a `precmd_functions` hook. The bracketed command number in the prompt will silently disappear if that hook is removed.
 

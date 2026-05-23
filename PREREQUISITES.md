@@ -28,13 +28,14 @@ Without these, parts of the prompt/status bar/editor go silent or error.
 | Tool | Used by | Install |
 |------|---------|---------|
 | **tmux** | `tmux/dot-tmux.conf` | via `brew bundle` (see [`Brewfile`](./Brewfile)). |
-| **tpack** | `tmux/dot-tmux.conf` runs `tpack init` to load tmux plugins (nord-tmux, tmux-sensible, vim-tmux-navigator). | via `brew bundle` (taps `tmuxpack/tpack`). |
+| **tpack** | `tmux/dot-tmux.conf` runs `tpack init` to load tmux plugins (tmux-sensible, vim-tmux-navigator). | via `brew bundle` (taps `tmuxpack/tpack`). |
 | **starship** | The shell prompt (`zsh/dot-zshrc` calls `starship init zsh`). | via `brew bundle`. |
 | **neovim** | `nvim/dot-config/nvim/`. `init.lua` is the entry point; lazy.nvim self-bootstraps from git on first run. | via `brew bundle`. |
 | **ghostty** | `ghostty/dot-config/ghostty/config.ghostty` | via `brew bundle` (cask). |
 | **lsd** | `alias ls=lsd` in `dot-zshrc`. Without it, every `ls` errors. | via `brew bundle`. |
 | **zoxide** | Loaded as a Zinit plugin in `dot-zshrc`. Provides smarter `cd`. | via `brew bundle`. |
 | **python3** | Used directly by a few small helper scripts. | Pre-installed on modern macOS. `bootstrap.sh` falls back to `brew install python3` only if `command -v python3` reports it missing. |
+| **shellcheck** | `scripts/lint.sh` runs it on the bash scripts (`bootstrap.sh`, lint scripts) as part of `./scripts/lint.sh`. Not required for the dotfiles to work; only needed if you run lint locally. | via `brew bundle`. |
 
 ## 3. Fonts
 

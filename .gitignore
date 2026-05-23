@@ -1,0 +1,7 @@
+# macOS
+.DS_Store
+
+# Editor swap / backup files
+*.swp
+*.swo
+*~
