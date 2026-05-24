@@ -1,10 +1,13 @@
 # dotfiles
 
-Personal dotfiles for macOS, managed with GNU `stow`.
+Personal dotfiles for macOS, managed with GNU `stow`. Also a valid target
+for the [devcontainer spec](https://containers.dev/)'s
+`--dotfiles-repository` flow — see [`PREREQUISITES.md`](./PREREQUISITES.md)
+"Container use".
 
 ## Setup
 
-On a fresh machine:
+On a fresh Mac:
 
 1. Clone this repo somewhere (e.g. `~/code/dotfiles-mbp`).
 2. Read [`PREREQUISITES.md`](./PREREQUISITES.md) to see what gets installed.
@@ -12,6 +15,17 @@ On a fresh machine:
 4. (Optional) Create `~/.zshsecrets` per PREREQUISITES.md §5.
 5. Run `./update.sh` to symlink configs into `$HOME`.
 6. Restart your shell.
+
+In a dev container, point `devcontainer up` at this repo:
+
+```sh
+devcontainer up --workspace-folder <project> \
+  --dotfiles-repository https://github.com/cdh-src/dotfiles-mbp.git
+```
+
+The CLI clones this repo into the container and runs `install.sh`, which
+installs the Linux equivalents of the Brewfile (skipping host-only items),
+stows configs, and pre-warms Neovim plugins + LSPs.
 
 ## On a configured machine
 

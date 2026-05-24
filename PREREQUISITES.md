@@ -72,11 +72,61 @@ A few things `bootstrap.sh` and `update.sh` can't do for you:
 
 ---
 
+## Container use (devcontainers)
+
+This repo doubles as a dotfiles target for the [devcontainer
+spec](https://containers.dev/)'s `--dotfiles-repository` flow. Point it at
+this repo:
+
+```sh
+devcontainer up --workspace-folder <project> \
+  --dotfiles-repository https://github.com/cdh-src/dotfiles-mbp.git
+```
+
+The devcontainer CLI clones this repo into the container at `~/dotfiles`
+and runs the first script it finds among `install.sh` / `setup.sh` /
+`bootstrap.sh`. Our `install.sh` is the container entry point —
+`bootstrap.sh` stays macOS-only and is never executed inside the container.
+
+What `install.sh` does:
+
+1. Detects the distro (Alpine via apk, Debian/Ubuntu via apt). Other
+   distros fail loudly.
+2. Installs Linux equivalents of the §2 tools, plus the runtime deps that
+   `mason.nvim` and `nvim-treesitter` need (nodejs/npm/unzip/tar plus a C
+   toolchain). Skips host-only items: tmux, tpack, ghostty, fonts,
+   shellcheck. starship comes from apk on Alpine, from the upstream
+   installer script on Debian/Ubuntu (it's not in apt).
+3. Backs up any pre-existing dotfiles in `$HOME` to
+   `~/.pre-stow-backup-<timestamp>/`. MS's devcontainer base image ships
+   `.zshrc` and `.bashrc` from oh-my-zsh; these would otherwise collide
+   with our stow.
+4. Runs `update.sh` with `STOW_SKIP="ghostty tmux"` so mac-only packages
+   don't get stowed.
+5. Pre-warms Neovim: runs `Lazy! sync` and explicitly drives the
+   `mason-lspconfig` `ensure_installed` set (pyright, lua_ls, yamlls) so
+   the first interactive `nvim` opens with everything ready. LSPs without
+   a prebuilt for the container's platform (e.g. lua-language-server on
+   Alpine musl/aarch64) are reported as `MISSING` and skipped; install
+   succeeds anyway.
+
+Tested against `ghcr.io/home-assistant/home-assistant:stable` (Alpine 3.22
+aarch64) and `mcr.microsoft.com/devcontainers/base:ubuntu` (Ubuntu 26.04
+aarch64). Older Ubuntu releases may not have a recent enough Neovim or
+lsd/zoxide in apt — extend `install.sh` if you hit one.
+
+Per-project Python LSP config (`pyrightconfig.json` pointing pyright at
+the project's interpreter) is the project's responsibility, not this
+repo's. See the relevant project's `.devcontainer/` for examples.
+
+---
+
 ## Keeping this file in sync
 
 If you add a new external dependency to any config, update the right file:
 
 - **Brew-installable** (formula, tap, cask, font cask) → add a line to [`Brewfile`](./Brewfile) and a row to the relevant table above.
 - **Not brew-installable** (uv tool, manual step) → add it to `bootstrap.sh` and the table above.
+- **Needed inside dev containers too** → add it to the matching `apk`/`apt` list in [`install.sh`](./install.sh). Mention it under "Container use" above.
 
 `brew bundle check --file=./Brewfile` is the drift test for the brew portion. CLAUDE.md restates this rule for any future automated changes.

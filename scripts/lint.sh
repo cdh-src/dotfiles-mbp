@@ -65,6 +65,30 @@ else
   echo "  shellcheck not installed; skipping (brew install shellcheck)"
 fi
 
+# ---- shellcheck on POSIX sh scripts ---------------------------------------
+step "shellcheck (posix sh)"
+posix_files=(
+  install.sh
+)
+if command -v shellcheck >/dev/null 2>&1; then
+  for f in "${posix_files[@]}"; do
+    ran=$((ran + 1))
+    if [[ ! -f $f ]]; then
+      echo "  missing: $f"
+      fail=1
+      continue
+    fi
+    if shellcheck -s sh "$f"; then
+      echo "  ok: $f"
+    else
+      echo "  FAIL: $f"
+      fail=1
+    fi
+  done
+else
+  echo "  shellcheck not installed; skipping (brew install shellcheck)"
+fi
+
 # ---- palette drift --------------------------------------------------------
 step "palette drift"
 ran=$((ran + 1))

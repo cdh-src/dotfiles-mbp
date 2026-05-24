@@ -19,7 +19,9 @@ Before `./update.sh` will produce a working environment on a fresh machine, the 
 
 `./bootstrap.sh` automates the brew installs listed there (via a `Brewfile` consumed by `brew bundle`). It's intentionally NOT invoked by `update.sh` — run it explicitly only after reviewing the prerequisites doc.
 
-> **Keep PREREQUISITES.md, `Brewfile`, and `bootstrap.sh` in sync.** When any change to this repo introduces a new external dependency, update the right file(s) in the same commit: brew-installable items go in `Brewfile`, non-brew items (uv tools, manual steps) go in `bootstrap.sh`, and both should be reflected in PREREQUISITES.md. The doc is the source of truth. `brew bundle check --file=./Brewfile` validates the brew portion against the installed state. Claude must follow this rule whenever it observes or makes such a change, even when the change is small.
+For use inside a devcontainer, the entry point is `./install.sh` instead — see [`PREREQUISITES.md`](./PREREQUISITES.md) "Container use" for what it does and how to invoke `devcontainer up --dotfiles-repository`. `bootstrap.sh` stays macOS-only.
+
+> **Keep PREREQUISITES.md, `Brewfile`, `bootstrap.sh`, and `install.sh` in sync.** When any change to this repo introduces a new external dependency, update the right file(s) in the same commit: brew-installable mac items go in `Brewfile`, non-brew mac items (uv tools, manual steps) go in `bootstrap.sh`, container-required items go in the matching apk/apt list in `install.sh`, and all of them get a row in `PREREQUISITES.md`. The doc is the source of truth. `brew bundle check --file=./Brewfile` validates the brew portion against the installed state. Claude must follow this rule whenever it observes or makes such a change, even when the change is small.
 
 ## Layout convention (stow)
 
