@@ -26,6 +26,18 @@ esac
 function export-cmd-num() { export STARSHIP_CMD_NUM=$HISTCMD; }
 precmd_functions+=(export-cmd-num)
 
+# Default --dotfiles-repository on `devcontainer up` to this repo. Only fires
+# when the flag isn't already on the command line, so explicit overrides win.
+# No-op when the devcontainer CLI isn't installed (function just defers).
+devcontainer() {
+  if [[ "${1:-}" == "up" && "$*" != *--dotfiles-repository* ]]; then
+    command devcontainer "$@" \
+      --dotfiles-repository https://github.com/cdh-src/dotfiles-mbp.git
+  else
+    command devcontainer "$@"
+  fi
+}
+
 # Starship Prompt
 command -v starship >/dev/null && eval "$(starship init zsh)"
 
