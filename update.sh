@@ -35,6 +35,15 @@ STOW_IGNORE=(
   scripts 1   # repo-local utilities (lint.sh, lint-palette.sh, …)
 )
 
+# Caller-supplied additional skips (space-separated package names).
+# install.sh uses this to skip macOS-only packages (ghostty, tmux) when
+# stowing into a Linux dev container.
+if [[ -n ${STOW_SKIP:-} ]]; then
+  for p in ${(s: :)STOW_SKIP}; do
+    STOW_IGNORE[$p]=1
+  done
+fi
+
 fail=0
 for pkg in *(N/); do
   if (( ${+STOW_IGNORE[$pkg]} )); then
