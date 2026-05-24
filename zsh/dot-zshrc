@@ -1,17 +1,18 @@
-# Zinit (bootstrap + annexes live in their own file)
-source "$HOME/.config/zsh/zinit-bootstrap.zsh" || return 0
+# Zinit (bootstrap + annexes live in their own file). Tracked via a flag so
+# the rest of this file (aliases, prompt, keybindings, secrets) still loads
+# when Zinit is missing — e.g. in a fresh devcontainer before install.sh has
+# run, or with no network on first boot.
+if source "$HOME/.config/zsh/zinit-bootstrap.zsh"; then
+  zinit light zsh-users/zsh-autosuggestions
+  zinit light zsh-users/zsh-syntax-highlighting
+  zinit light ajeetdsouza/zoxide
+  bindkey '^ ' autosuggest-accept
+fi
 
-
-# Packages
-zinit light zsh-users/zsh-autosuggestions
-zinit light zsh-users/zsh-syntax-highlighting
-zinit light ajeetdsouza/zoxide
-
-bindkey '^ ' autosuggest-accept
-
-# Aliases
+# Aliases. `command -v` guards so a fresh checkout (or a minimal container
+# before its dotfiles install step runs) doesn't fail on every shell start.
 alias vim=nvim
-alias ls=lsd
+command -v lsd >/dev/null && alias ls=lsd
 
 # Fix Title Bar
 case $TERM in
@@ -26,7 +27,7 @@ function export-cmd-num() { export STARSHIP_CMD_NUM=$HISTCMD; }
 precmd_functions+=(export-cmd-num)
 
 # Starship Prompt
-eval "$(starship init zsh)"
+command -v starship >/dev/null && eval "$(starship init zsh)"
 
 bindkey -v
 
