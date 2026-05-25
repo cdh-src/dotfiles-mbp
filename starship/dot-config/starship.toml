@@ -10,9 +10,8 @@
 add_newline = false
 palette = "nord"
 
-# Left side: command number in dim brackets, then the prompt character.
-format = """
-$character"""
+# Left side: container indicator (only in containers), command number, prompt char.
+format = """$container$character"""
 
 # Right side: current directory (home collapsed to ~).
 right_format = """$directory"""
@@ -44,6 +43,14 @@ read_only_style = "nord11"
 success_symbol = "[❯](nord15)"
 error_symbol   = "[❯](nord11)"
 vimcmd_symbol  = "[❮](nord14)"
+
+# Container indicator: only renders inside a container (auto-detected via
+# /.dockerenv, /run/.containerenv, etc). Makes devcontainer shells visually
+# distinct from host shells. Yellow to draw the eye without screaming.
+[container]
+format = "[⬢ $name]($style) "
+style = "nord13 bold"
+disabled = false
 
 # Command number from $HISTCMD, exported by zsh's precmd.
 # Format: "[42] " in dim grey brackets, light-grey number.

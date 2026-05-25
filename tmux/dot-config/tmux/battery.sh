@@ -65,4 +65,12 @@ else
   esac
 fi
 
-printf '%s %s%%\n' "$glyph" "$pct"
+# Color follows charging state: nord14 green when charging, nord13 yellow otherwise.
+# tmux interprets #[fg=...] in #() output, so consumers don't need to set fg.
+if [[ "$state" == charging ]]; then
+  color='#a3be8c'
+else
+  color='#ebcb8b'
+fi
+
+printf '#[fg=%s]%s %s%%\n' "$color" "$glyph" "$pct"
