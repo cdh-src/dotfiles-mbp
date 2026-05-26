@@ -76,8 +76,10 @@ mounted, it:
 
 1. `npm install -g @github/copilot` (Copilot CLI inside the container)
 2. Symlinks `~/.copilot/{config.json, settings.json, skills,
-   session-store.db}` → `~/.copilot-host/$name` (host auth + skills,
-   read-only)
+   session-store.db}` → `~/.copilot-host/$name` (host auth + skills;
+   the mount itself is rw because devcontainer CLI's `--mount` doesn't
+   accept `readonly`, but Copilot only ever writes via the rw-shared
+   paths below, so host-side data is safe in practice)
 3. Symlinks `~/.copilot/{session-state, command-history-state.json,
    permissions-config.json, logs}` → `~/.copilot-shared/$name`
    (read/write, shared across all containers)

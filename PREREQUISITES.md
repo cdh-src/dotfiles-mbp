@@ -129,9 +129,10 @@ For day-to-day devcontainer use, the repo ships a `devc` wrapper (see
 [`devc/README.md`](./devc/README.md)) that always injects:
 
 - The Obsidian vault (`~/Documents/obsidian-notes` → `/obsidian`).
-- Host Copilot auth + skills (read-only) and a cross-container Copilot
-  data dir (`~/.copilot-devcontainer/`).
-- The host `gh` CLI config (read-only).
+- Host Copilot auth + skills (selected files, symlinked into the
+  container's `~/.copilot/`) and a cross-container Copilot data dir
+  (`~/.copilot-devcontainer/`).
+- The host `gh` CLI config (symlinked into the container's `~/.config/gh`).
 - This dotfiles repo via `--dotfiles-repository`.
 
 ```sh
