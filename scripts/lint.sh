@@ -45,6 +45,7 @@ bash_files=(
   bootstrap.sh
   scripts/lint.sh
   scripts/lint-palette.sh
+  dc/dot-local/bin/dc
 )
 if command -v shellcheck >/dev/null 2>&1; then
   for f in "${bash_files[@]}"; do

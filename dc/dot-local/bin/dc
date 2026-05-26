@@ -1,0 +1,263 @@
+#!/usr/bin/env bash
+# dc — thin wrapper around `devcontainer` that injects standard mounts and
+# the dotfiles repo on every `up`, plus a few convenience subcommands.
+#
+# Why this exists:
+#   - `devcontainer up` takes long, repetitive flag lists for mounts and
+#     `--dotfiles-repository`. We always want the same set of host paths
+#     (Obsidian vault, Copilot auth, gh config, …) inside every container.
+#   - Lets `copilot --allow-all-tools` run inside the container — isolated
+#     from host files outside the explicit mounts — so autopilot is safer.
+#
+# Mounts come from a config file the user can edit:
+#   $XDG_CONFIG_HOME/dc/mounts.conf  (default ~/.config/dc/mounts.conf)
+# One `--mount` value per line; `#` comments and blank lines ignored;
+# `$VAR` and `${VAR}` get expanded against the current environment.
+#
+# Dotfiles repo: $DC_DOTFILES_REPO, defaults to this repo.
+#
+# Workspace folder: auto-discovered by walking up from $PWD looking for
+# `.devcontainer/devcontainer.json` or `.devcontainer.json`. Override with
+# `--workspace-folder PATH` (must precede the subcommand, or use `dc <cmd>
+# --workspace-folder PATH`).
+
+set -euo pipefail
+
+# ---- defaults -------------------------------------------------------------
+
+DC_DOTFILES_REPO="${DC_DOTFILES_REPO:-git@github.com:cdh-src/dotfiles-mbp.git}"
+DC_MOUNTS_FILE="${DC_MOUNTS_FILE:-${XDG_CONFIG_HOME:-$HOME/.config}/dc/mounts.conf}"
+
+# ---- helpers --------------------------------------------------------------
+
+err() { printf 'dc: %s\n' "$*" >&2; }
+die() { err "$*"; exit 1; }
+
+usage() {
+  cat <<'USAGE'
+Usage: dc [--workspace-folder PATH] <command> [args...]
+
+Container lifecycle:
+  up           Start (or recreate if config changed) the devcontainer with
+               standard mounts and the dotfiles repo injected.
+  rebuild      Force a clean rebuild (--remove-existing-container).
+  down         Stop the container (resolves id via `devcontainer
+               read-configuration` + `docker stop`).
+
+Entering:
+  shell        Open an interactive login shell inside the container.
+  exec ARGS... Run one-off command inside the container.
+
+Copilot:
+  copilot ARGS Run `copilot --allow-all-tools ARGS` inside the container.
+
+Introspection:
+  status       Show running state, container id, image, mounts.
+  logs         Tail container logs.
+  config       Print resolved devcontainer config.
+
+Other:
+  help, -h, --help     Show this help.
+
+Workspace folder is auto-discovered by walking up from $PWD for a
+.devcontainer/ directory. Override with --workspace-folder PATH.
+
+Standard mounts are read from:
+  $DC_MOUNTS_FILE
+USAGE
+}
+
+# Walk up from $PWD to find the nearest ancestor containing a devcontainer
+# config. Echoes the path on success; exits non-zero with a clear error on
+# failure.
+find_workspace_folder() {
+  local dir
+  dir="$(pwd -P)"
+  while :; do
+    if [[ -f "$dir/.devcontainer/devcontainer.json" \
+       || -f "$dir/.devcontainer.json" ]]; then
+      printf '%s\n' "$dir"
+      return 0
+    fi
+    [[ "$dir" == "/" ]] && return 1
+    dir="$(dirname "$dir")"
+  done
+}
+
+# Read $DC_MOUNTS_FILE and echo one expanded line per active mount entry.
+# Blank lines and lines starting with `#` are ignored. Each line is passed
+# through `envsubst`-equivalent expansion via the shell so $HOME, $USER,
+# etc. resolve.
+read_mounts() {
+  [[ -f "$DC_MOUNTS_FILE" ]] || return 0
+  local line
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    # strip leading/trailing whitespace
+    line="${line#"${line%%[![:space:]]*}"}"
+    line="${line%"${line##*[![:space:]]}"}"
+    [[ -z "$line" || "$line" == \#* ]] && continue
+    # eval with `printf '%s'` to expand env vars but nothing else dangerous.
+    # We deliberately use eval here; the file is user-owned config.
+    eval "printf '%s\n' \"$line\""
+  done < "$DC_MOUNTS_FILE"
+}
+
+# Build the array of `--mount VAL` args from the mounts config.
+mount_args() {
+  local m
+  while IFS= read -r m; do
+    [[ -z "$m" ]] && continue
+    printf -- '--mount\n%s\n' "$m"
+  done < <(read_mounts)
+}
+
+# Resolve the running container id for a workspace, if any. Prints id on
+# success, empty string + nonzero return otherwise.
+resolve_container_id() {
+  local wsf="$1"
+  devcontainer read-configuration --workspace-folder "$wsf" \
+    --include-merged-configuration 2>/dev/null \
+    | python3 -c '
+import json, sys
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    sys.exit(1)
+cid = (d.get("containerId") or d.get("container", {}).get("id") or "")
+if not cid:
+    sys.exit(1)
+print(cid)
+' || return 1
+}
+
+# Resolve container id via `docker ps` filter as a fallback (matches the
+# devcontainer label for this workspace).
+resolve_container_id_docker() {
+  local wsf="$1"
+  docker ps -q --filter "label=devcontainer.local_folder=$wsf" 2>/dev/null | head -n1
+}
+
+# ---- arg parsing ----------------------------------------------------------
+
+WORKSPACE_FOLDER=""
+# Pull --workspace-folder from anywhere in args (before or after subcommand).
+positional=()
+while (( $# > 0 )); do
+  case "$1" in
+    --workspace-folder)
+      [[ $# -ge 2 ]] || die "--workspace-folder needs a value"
+      WORKSPACE_FOLDER="$2"; shift 2
+      ;;
+    --workspace-folder=*)
+      WORKSPACE_FOLDER="${1#*=}"; shift
+      ;;
+    -h|--help|help)
+      usage; exit 0
+      ;;
+    *)
+      positional+=("$1"); shift
+      ;;
+  esac
+done
+
+set -- "${positional[@]:+${positional[@]}}"
+(( $# > 0 )) || { usage >&2; exit 2; }
+
+cmd="$1"; shift
+
+# Validate subcommand name BEFORE resolving the workspace folder so a typo
+# shows "unknown subcommand" instead of "no .devcontainer/ found".
+case "$cmd" in
+  up|rebuild|down|shell|exec|copilot|status|logs|config) ;;
+  *)
+    err "unknown subcommand: $cmd"
+    usage >&2
+    exit 2
+    ;;
+esac
+
+# Resolve workspace folder for commands that need one (everything except
+# help; even `status` needs to know which project).
+if [[ -z "$WORKSPACE_FOLDER" ]]; then
+  if ! WORKSPACE_FOLDER="$(find_workspace_folder)"; then
+    die "no .devcontainer/ found at or above $(pwd -P). Pass --workspace-folder PATH or cd into a project."
+  fi
+fi
+
+command -v devcontainer >/dev/null 2>&1 \
+  || die "'devcontainer' CLI not found. Install with: npm install -g @devcontainers/cli"
+
+# ---- subcommands ----------------------------------------------------------
+
+case "$cmd" in
+  up|rebuild)
+    extra=()
+    [[ "$cmd" == "rebuild" ]] && extra+=(--remove-existing-container)
+    # Build mount args. Read into an array so spaces in values survive.
+    mounts=()
+    while IFS= read -r m; do
+      [[ -n "$m" ]] && mounts+=(--mount "$m")
+    done < <(read_mounts)
+    if (( ${#mounts[@]} == 0 )) && [[ ! -f "$DC_MOUNTS_FILE" ]]; then
+      err "warning: mounts file $DC_MOUNTS_FILE not found; bringing container up with no extra mounts."
+    fi
+    exec devcontainer up \
+      --workspace-folder "$WORKSPACE_FOLDER" \
+      "${mounts[@]}" \
+      --dotfiles-repository "$DC_DOTFILES_REPO" \
+      "${extra[@]}" \
+      "$@"
+    ;;
+
+  down)
+    cid="$(resolve_container_id "$WORKSPACE_FOLDER" 2>/dev/null || true)"
+    [[ -z "$cid" ]] && cid="$(resolve_container_id_docker "$WORKSPACE_FOLDER" || true)"
+    [[ -z "$cid" ]] && die "no running container found for $WORKSPACE_FOLDER"
+    exec docker stop "$cid"
+    ;;
+
+  shell)
+    sh="${SHELL:-/bin/bash}"
+    exec devcontainer exec --workspace-folder "$WORKSPACE_FOLDER" "$sh" -l "$@"
+    ;;
+
+  exec)
+    (( $# > 0 )) || die "exec needs a command"
+    exec devcontainer exec --workspace-folder "$WORKSPACE_FOLDER" "$@"
+    ;;
+
+  copilot)
+    exec devcontainer exec --workspace-folder "$WORKSPACE_FOLDER" \
+      copilot --allow-all-tools "$@"
+    ;;
+
+  status)
+    cid="$(resolve_container_id "$WORKSPACE_FOLDER" 2>/dev/null || true)"
+    [[ -z "$cid" ]] && cid="$(resolve_container_id_docker "$WORKSPACE_FOLDER" || true)"
+    if [[ -z "$cid" ]]; then
+      printf 'workspace: %s\nstate:     not running\n' "$WORKSPACE_FOLDER"
+      exit 0
+    fi
+    printf 'workspace: %s\ncontainer: %s\nstate:     running\n\n' "$WORKSPACE_FOLDER" "$cid"
+    docker inspect --format \
+      'image:     {{.Config.Image}}
+started:   {{.State.StartedAt}}
+mounts:' "$cid"
+    docker inspect --format \
+      '{{range .Mounts}}  - {{.Type}} {{.Source}} → {{.Destination}}{{if .RW}}{{else}} (ro){{end}}
+{{end}}' "$cid"
+    ;;
+
+  logs)
+    cid="$(resolve_container_id "$WORKSPACE_FOLDER" 2>/dev/null || true)"
+    [[ -z "$cid" ]] && cid="$(resolve_container_id_docker "$WORKSPACE_FOLDER" || true)"
+    [[ -z "$cid" ]] && die "no container found for $WORKSPACE_FOLDER"
+    exec docker logs -f "$cid" "$@"
+    ;;
+
+  config)
+    exec devcontainer read-configuration \
+      --workspace-folder "$WORKSPACE_FOLDER" \
+      --include-merged-configuration "$@"
+    ;;
+esac

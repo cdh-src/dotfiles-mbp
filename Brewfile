@@ -20,6 +20,7 @@ brew "neovim"
 brew "lsd"
 brew "zoxide"
 brew "shellcheck"
+brew "node"
 
 cask "ghostty"
 cask "font-0xproto-nerd-font"

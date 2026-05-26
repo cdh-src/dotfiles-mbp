@@ -27,7 +27,10 @@ fi
 
 # Stow these macOS-only / host-only packages are skipped inside containers.
 # update.sh reads STOW_SKIP (added in step 5b) and combines with STOW_IGNORE.
-export STOW_SKIP="ghostty tmux"
+#   - ghostty, tmux: macOS-only / host-only.
+#   - dc: host-side wrapper around `devcontainer` CLI. Pointless inside the
+#     container it would be wrapping.
+export STOW_SKIP="ghostty tmux dc"
 
 log() { printf '  %s\n' "$*"; }
 bold() { printf '\n\033[1m== %s ==\033[0m\n' "$*"; }
@@ -183,6 +186,104 @@ end
 LUA
 nvim --headless "+luafile $prewarm_lua" +qa 2>&1 | grep -E "installed|MISSING" || true
 rm -f "$prewarm_lua"
+
+# ---- Copilot CLI + host/shared mount wiring -------------------------------
+#
+# Triggered only when the container was launched via the `dc` wrapper (or an
+# equivalent setup) that bind-mounts the host Copilot dir at
+# ~/.copilot-host. See dc/README.md for the full sharing model.
+#
+# Steps:
+#   1. Install Copilot CLI globally via npm (idempotent: skip if present).
+#   2. Symlink read-only host files into ~/.copilot/ (auth, settings,
+#      skills, cross-session history DB).
+#   3. Symlink writable shared files/dirs into ~/.copilot/ (session state,
+#      command history, permissions, logs). Each devcontainer reads/writes
+#      the same store on the host.
+#   4. Stub ~/.copilot/mcp.json if missing — placeholder for user to fill.
+#
+# When ~/.copilot-host is not mounted, this whole section is a no-op.
+
+bold "Copilot CLI (devcontainer wiring)"
+
+if [ ! -d "$HOME/.copilot-host" ]; then
+  log "no ~/.copilot-host mount → skipping Copilot setup"
+  log "(launch via the host's 'dc up' to enable; see dc/README.md)"
+else
+  log "found ~/.copilot-host → wiring up Copilot"
+
+  # Step 1: install Copilot CLI. The CLI is published as @github/copilot.
+  if command -v copilot >/dev/null 2>&1; then
+    log "✓ copilot already installed: $(command -v copilot)"
+  else
+    log "installing @github/copilot via npm"
+    if $SUDO npm install -g @github/copilot >/dev/null 2>&1; then
+      log "✓ copilot installed"
+    else
+      log "WARN: npm install -g @github/copilot failed; install manually inside the container"
+    fi
+  fi
+
+  mkdir -p "$HOME/.copilot"
+
+  # Step 2: read-only links from host. If a real file is in place from a
+  # prior copilot launch, replace it with the symlink so host wins.
+  for name in config.json settings.json skills session-store.db; do
+    src="$HOME/.copilot-host/$name"
+    dst="$HOME/.copilot/$name"
+    if [ ! -e "$src" ]; then
+      log "  skip $name (not present on host)"
+      continue
+    fi
+    # Remove existing non-symlink so ln -sfn doesn't get confused on dirs.
+    if [ -e "$dst" ] && [ ! -L "$dst" ]; then
+      rm -rf "$dst"
+    fi
+    ln -sfn "$src" "$dst"
+    log "  ro-link: ~/.copilot/$name -> ~/.copilot-host/$name"
+  done
+
+  # Step 3: writable shared links. Ensure each target exists on the shared
+  # side so the symlink is immediately usable.
+  shared="$HOME/.copilot-shared"
+  if [ ! -d "$shared" ]; then
+    log "WARN: ~/.copilot-shared not mounted; per-container Copilot state will be ephemeral"
+  else
+    # Dirs that should always exist on the shared side.
+    for d in session-state logs; do
+      mkdir -p "$shared/$d"
+    done
+    # Files that may not exist yet — touch creates them empty so the
+    # symlink target is valid.
+    for f in command-history-state.json permissions-config.json; do
+      [ -e "$shared/$f" ] || : > "$shared/$f"
+    done
+    # Now wire up the symlinks.
+    for name in session-state logs command-history-state.json permissions-config.json; do
+      dst="$HOME/.copilot/$name"
+      src="$shared/$name"
+      if [ -e "$dst" ] && [ ! -L "$dst" ]; then
+        rm -rf "$dst"
+      fi
+      ln -sfn "$src" "$dst"
+      log "  rw-link: ~/.copilot/$name -> ~/.copilot-shared/$name"
+    done
+  fi
+
+  # Step 4: MCP config stub. Plain JSON (no comments) so Copilot can parse
+  # it as-is once the user fills in actual servers.
+  mcp="$HOME/.copilot/mcp.json"
+  if [ -e "$mcp" ] || [ -L "$mcp" ]; then
+    log "✓ mcp.json already present"
+  else
+    cat > "$mcp" <<'JSON'
+{
+  "mcpServers": {}
+}
+JSON
+    log "✓ stubbed empty mcp.json (fill in servers as needed; /obsidian is the vault mount)"
+  fi
+fi
 
 bold "install.sh complete"
 if [ "$moved" = 1 ]; then

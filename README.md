@@ -34,3 +34,21 @@ stows configs, and pre-warms Neovim plugins + LSPs.
 ## Layout
 
 Each top-level directory is a stow package using the `--dotfiles` convention (`dot-foo` → `~/.foo`). See [`CLAUDE.md`](./CLAUDE.md) for the full layout convention and key wiring notes.
+
+## Devcontainers with `dc`
+
+`dc` is a thin wrapper around the `devcontainer` CLI that always injects
+the standard mounts (Obsidian vault, host Copilot auth, gh config, shared
+Copilot data dir) and points containers at this repo as their dotfiles
+source. It's the entry point for running `copilot --allow-all-tools`
+safely inside any project's devcontainer.
+
+```sh
+cd <project-with-.devcontainer>
+dc up                # bring up with standard mounts
+dc copilot           # run Copilot CLI with --allow-all-tools, inside
+dc shell             # interactive login shell, inside
+```
+
+See [`dc/README.md`](./dc/README.md) for full subcommand list and the
+host/container sharing model.

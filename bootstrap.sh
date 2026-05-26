@@ -52,6 +52,8 @@ This script installs everything PREREQUISITES.md describes:
   - Homebrew (if missing)
   - zsh and python3 (only if not already on PATH — macOS ships both)
   - Everything in ./Brewfile (formulae, taps, casks, fonts)
+  - devcontainer CLI + Copilot CLI via npm (for the `dc` wrapper)
+  - ~/.copilot-devcontainer/ (cross-container Copilot data dir)
 
 It does NOT create ~/.zshsecrets or run ./update.sh —
 do those steps manually after this finishes.
@@ -115,7 +117,49 @@ fi
 bold "3. Brewfile (brew bundle)"
 brew bundle --file="$script_dir/Brewfile"
 
-# ---- 4. Done ---------------------------------------------------------------
+# ---- 4. npm-installed CLIs (devcontainer + Copilot) ------------------------
+#
+# Neither the devcontainer CLI nor the Copilot CLI ships through brew. Both
+# are needed for the `dc` wrapper flow (see dc/README.md). Idempotent:
+# `command -v` short-circuits the npm install.
+
+bold "4. devcontainer CLI + Copilot CLI (npm globals)"
+
+npm_install_global() {
+  local pkg="$1" bin="$2"
+  if have "$bin"; then
+    info "✓ $bin already installed at: $(command -v "$bin")"
+  else
+    info "installing $pkg globally with npm…"
+    npm install -g "$pkg"
+  fi
+}
+
+if have npm; then
+  npm_install_global @devcontainers/cli devcontainer
+  npm_install_global @github/copilot       copilot
+else
+  info "skipping: npm not on PATH (node should have been installed by Brewfile — check brew bundle output)."
+fi
+
+# ---- 5. Host directories for devcontainer sharing --------------------------
+#
+# `~/.copilot-devcontainer/` is the cross-container read/write store for
+# Copilot session-state, history, and permissions (see dc/README.md and
+# install.sh). Create it (and the obvious subdirs) so the first `dc up`
+# doesn't fail on a missing bind-mount source.
+
+bold "5. Host dirs for devcontainer Copilot sharing"
+
+dc_share="$HOME/.copilot-devcontainer"
+if [[ -d "$dc_share" ]]; then
+  info "✓ $dc_share already exists"
+else
+  info "creating $dc_share"
+  mkdir -p "$dc_share/session-state" "$dc_share/logs"
+fi
+
+# ---- 6. Done ---------------------------------------------------------------
 
 cat <<'EOF'
 
