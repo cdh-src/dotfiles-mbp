@@ -30,7 +30,7 @@ set -euo pipefail
 
 # ---- defaults -------------------------------------------------------------
 
-DEVC_DOTFILES_REPO="${DEVC_DOTFILES_REPO:-git@github.com:cdh-src/dotfiles-mbp.git}"
+DEVC_DOTFILES_REPO="${DEVC_DOTFILES_REPO:-https://github.com/cdh-src/dotfiles-mbp.git}"
 DEVC_MOUNTS_FILE="${DEVC_MOUNTS_FILE:-${XDG_CONFIG_HOME:-$HOME/.config}/devc/mounts.conf}"
 
 # ---- helpers --------------------------------------------------------------
@@ -290,16 +290,21 @@ case "$cmd" in
 
   shell)
     sh="${SHELL:-/bin/bash}"
-    exec devcontainer exec --workspace-folder "$WORKSPACE_FOLDER" "$sh" -l "$@"
+    exec devcontainer exec --workspace-folder "$WORKSPACE_FOLDER" \
+      --remote-env OBSIDIAN_VAULT=/obsidian \
+      "$sh" -l "$@"
     ;;
 
   exec)
     (( $# > 0 )) || die "exec needs a command"
-    exec devcontainer exec --workspace-folder "$WORKSPACE_FOLDER" "$@"
+    exec devcontainer exec --workspace-folder "$WORKSPACE_FOLDER" \
+      --remote-env OBSIDIAN_VAULT=/obsidian \
+      "$@"
     ;;
 
   copilot)
     exec devcontainer exec --workspace-folder "$WORKSPACE_FOLDER" \
+      --remote-env OBSIDIAN_VAULT=/obsidian \
       copilot --allow-all-tools "$@"
     ;;
 
