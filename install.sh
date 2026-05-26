@@ -30,7 +30,7 @@ fi
 #   - ghostty, tmux: macOS-only / host-only.
 #   - dc: host-side wrapper around `devcontainer` CLI. Pointless inside the
 #     container it would be wrapping.
-export STOW_SKIP="ghostty tmux dc"
+export STOW_SKIP="ghostty tmux devc"
 
 log() { printf '  %s\n' "$*"; }
 bold() { printf '\n\033[1m== %s ==\033[0m\n' "$*"; }
@@ -189,9 +189,9 @@ rm -f "$prewarm_lua"
 
 # ---- Copilot CLI + host/shared mount wiring -------------------------------
 #
-# Triggered only when the container was launched via the `dc` wrapper (or an
+# Triggered only when the container was launched via the `devc` wrapper (or an
 # equivalent setup) that bind-mounts the host Copilot dir at
-# ~/.copilot-host. See dc/README.md for the full sharing model.
+# ~/.copilot-host. See devc/README.md for the full sharing model.
 #
 # Steps:
 #   1. Install Copilot CLI globally via npm (idempotent: skip if present).
@@ -208,7 +208,7 @@ bold "Copilot CLI (devcontainer wiring)"
 
 if [ ! -d "$HOME/.copilot-host" ]; then
   log "no ~/.copilot-host mount → skipping Copilot setup"
-  log "(launch via the host's 'dc up' to enable; see dc/README.md)"
+  log "(launch via the host's 'devc up' to enable; see devc/README.md)"
 else
   log "found ~/.copilot-host → wiring up Copilot"
 

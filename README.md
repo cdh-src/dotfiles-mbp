@@ -35,9 +35,9 @@ stows configs, and pre-warms Neovim plugins + LSPs.
 
 Each top-level directory is a stow package using the `--dotfiles` convention (`dot-foo` → `~/.foo`). See [`CLAUDE.md`](./CLAUDE.md) for the full layout convention and key wiring notes.
 
-## Devcontainers with `dc`
+## Devcontainers with `devc`
 
-`dc` is a thin wrapper around the `devcontainer` CLI that always injects
+`devc` is a thin wrapper around the `devcontainer` CLI that always injects
 the standard mounts (Obsidian vault, host Copilot auth, gh config, shared
 Copilot data dir) and points containers at this repo as their dotfiles
 source. It's the entry point for running `copilot --allow-all-tools`
@@ -45,10 +45,10 @@ safely inside any project's devcontainer.
 
 ```sh
 cd <project-with-.devcontainer>
-dc up                # bring up with standard mounts
-dc copilot           # run Copilot CLI with --allow-all-tools, inside
-dc shell             # interactive login shell, inside
+devc up                # bring up with standard mounts
+devc copilot           # run Copilot CLI with --allow-all-tools, inside
+devc shell             # interactive login shell, inside
 ```
 
-See [`dc/README.md`](./dc/README.md) for full subcommand list and the
+See [`devc/README.md`](./devc/README.md) for full subcommand list and the
 host/container sharing model.

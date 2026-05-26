@@ -37,9 +37,9 @@ Without these, parts of the prompt/status bar/editor go silent or error.
 | **python3** | Used directly by a few small helper scripts. | Pre-installed on modern macOS. `bootstrap.sh` falls back to `brew install python3` only if `command -v python3` reports it missing. |
 | **shellcheck** | `scripts/lint.sh` runs it on the bash scripts (`bootstrap.sh`, lint scripts) as part of `./scripts/lint.sh`. Not required for the dotfiles to work; only needed if you run lint locally. | via `brew bundle`. |
 | **node** | Runtime for the `devcontainer` and Copilot CLIs (both shipped as global npm packages). | via `brew bundle`. |
-| **devcontainer CLI** | Used by the `dc` wrapper (see [`dc/README.md`](./dc/README.md)). | `bootstrap.sh` runs `npm install -g @devcontainers/cli` after `brew bundle`. |
-| **Copilot CLI** | Run inside dev containers via `dc copilot`. The host copy is also handy for ad-hoc use. | `bootstrap.sh` runs `npm install -g @github/copilot` after `brew bundle`. |
-| **OrbStack** *(or any container runtime)* | The `dc` wrapper needs a working Docker-compatible runtime. OrbStack is recommended on macOS — bind mounts handle uid mapping transparently between host uid 501 and container uid 1000. Docker Desktop and Colima also work. | Install separately ([orbstack.dev](https://orbstack.dev)); not in `Brewfile` to keep the install opt-in. |
+| **devcontainer CLI** | Used by the `devc` wrapper (see [`devc/README.md`](./devc/README.md)). | `bootstrap.sh` runs `npm install -g @devcontainers/cli` after `brew bundle`. |
+| **Copilot CLI** | Run inside dev containers via `devc copilot`. The host copy is also handy for ad-hoc use. | `bootstrap.sh` runs `npm install -g @github/copilot` after `brew bundle`. |
+| **OrbStack** *(or any container runtime)* | The `devc` wrapper needs a working Docker-compatible runtime. OrbStack is recommended on macOS — bind mounts handle uid mapping transparently between host uid 501 and container uid 1000. Docker Desktop and Colima also work. | Install separately ([orbstack.dev](https://orbstack.dev)); not in `Brewfile` to keep the install opt-in. |
 
 ## 3. Fonts
 
@@ -123,10 +123,10 @@ Per-project Python LSP config (`pyrightconfig.json` pointing pyright at
 the project's interpreter) is the project's responsibility, not this
 repo's. See the relevant project's `.devcontainer/` for examples.
 
-### The `dc` wrapper (recommended)
+### The `devc` wrapper (recommended)
 
-For day-to-day devcontainer use, the repo ships a `dc` wrapper (see
-[`dc/README.md`](./dc/README.md)) that always injects:
+For day-to-day devcontainer use, the repo ships a `devc` wrapper (see
+[`devc/README.md`](./devc/README.md)) that always injects:
 
 - The Obsidian vault (`~/Documents/obsidian-notes` → `/obsidian`).
 - Host Copilot auth + skills (read-only) and a cross-container Copilot
@@ -136,13 +136,13 @@ For day-to-day devcontainer use, the repo ships a `dc` wrapper (see
 
 ```sh
 cd <project-with-.devcontainer>
-dc up
-dc copilot           # runs `copilot --allow-all-tools` inside the container
+devc up
+devc copilot           # runs `copilot --allow-all-tools` inside the container
 ```
 
 `bootstrap.sh` installs the devcontainer CLI and Copilot CLI (npm globals)
-and creates `~/.copilot-devcontainer/`. The `dc` script and its
-`mounts.conf` come from the `dc/` stow package — re-run `./update.sh`
+and creates `~/.copilot-devcontainer/`. The `devc` script and its
+`mounts.conf` come from the `devc/` stow package — re-run `./update.sh`
 after pulling changes to that package.
 
 ---
