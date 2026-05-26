@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# dc — thin wrapper around `devcontainer` that injects standard mounts and
+# devc — thin wrapper around `devcontainer` that injects standard mounts and
 # the dotfiles repo on every `up`, plus a few convenience subcommands.
 #
 # Why this exists:
@@ -10,32 +10,37 @@
 #     from host files outside the explicit mounts — so autopilot is safer.
 #
 # Mounts come from a config file the user can edit:
-#   $XDG_CONFIG_HOME/dc/mounts.conf  (default ~/.config/dc/mounts.conf)
+#   $XDG_CONFIG_HOME/devc/mounts.conf  (default ~/.config/devc/mounts.conf)
 # One `--mount` value per line; `#` comments and blank lines ignored;
 # `$VAR` and `${VAR}` get expanded against the current environment.
 #
-# Dotfiles repo: $DC_DOTFILES_REPO, defaults to this repo.
+# Container user is auto-detected from the devcontainer config (remoteUser,
+# falling back to containerUser, falling back to "vscode") and exported as
+# $DEVC_CONTAINER_USER + $DEVC_CONTAINER_HOME into the mounts.conf expansion
+# environment. Override either by setting them before `devc up`.
+#
+# Dotfiles repo: $DEVC_DOTFILES_REPO, defaults to this repo.
 #
 # Workspace folder: auto-discovered by walking up from $PWD looking for
 # `.devcontainer/devcontainer.json` or `.devcontainer.json`. Override with
-# `--workspace-folder PATH` (must precede the subcommand, or use `dc <cmd>
+# `--workspace-folder PATH` (must precede the subcommand, or use `devc <cmd>
 # --workspace-folder PATH`).
 
 set -euo pipefail
 
 # ---- defaults -------------------------------------------------------------
 
-DC_DOTFILES_REPO="${DC_DOTFILES_REPO:-git@github.com:cdh-src/dotfiles-mbp.git}"
-DC_MOUNTS_FILE="${DC_MOUNTS_FILE:-${XDG_CONFIG_HOME:-$HOME/.config}/dc/mounts.conf}"
+DEVC_DOTFILES_REPO="${DEVC_DOTFILES_REPO:-git@github.com:cdh-src/dotfiles-mbp.git}"
+DEVC_MOUNTS_FILE="${DEVC_MOUNTS_FILE:-${XDG_CONFIG_HOME:-$HOME/.config}/devc/mounts.conf}"
 
 # ---- helpers --------------------------------------------------------------
 
-err() { printf 'dc: %s\n' "$*" >&2; }
+err() { printf 'devc: %s\n' "$*" >&2; }
 die() { err "$*"; exit 1; }
 
 usage() {
   cat <<'USAGE'
-Usage: dc [--workspace-folder PATH] <command> [args...]
+Usage: devc [--workspace-folder PATH] <command> [args...]
 
 Container lifecycle:
   up           Start (or recreate if config changed) the devcontainer with
@@ -63,7 +68,7 @@ Workspace folder is auto-discovered by walking up from $PWD for a
 .devcontainer/ directory. Override with --workspace-folder PATH.
 
 Standard mounts are read from:
-  $DC_MOUNTS_FILE
+  $DEVC_MOUNTS_FILE
 USAGE
 }
 
@@ -84,12 +89,74 @@ find_workspace_folder() {
   done
 }
 
-# Read $DC_MOUNTS_FILE and echo one expanded line per active mount entry.
+# Resolve the container user for a workspace, in priority order:
+#   1. $DEVC_CONTAINER_USER (explicit override).
+#   2. mergedConfiguration.remoteUser from `devcontainer read-configuration`.
+#   3. mergedConfiguration.containerUser.
+#   4. configuration.remoteUser / configuration.containerUser (single-config
+#      fallback for older CLI output shapes).
+#   5. "vscode" (devcontainer default).
+# Echoes the resolved username on stdout. Never fails — there is always a
+# fallback. Logs to stderr which source won.
+resolve_container_user() {
+  local wsf="$1"
+  if [[ -n "${DEVC_CONTAINER_USER:-}" ]]; then
+    err "container user: $DEVC_CONTAINER_USER (from \$DEVC_CONTAINER_USER)"
+    printf '%s\n' "$DEVC_CONTAINER_USER"
+    return 0
+  fi
+  local resolved source
+  read -r resolved source < <(
+    devcontainer read-configuration \
+      --workspace-folder "$wsf" \
+      --include-merged-configuration 2>/dev/null \
+    | python3 -c '
+import json, sys
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+for root_key, label in (("mergedConfiguration", "merged"), ("configuration", "config")):
+    root = d.get(root_key) or {}
+    for field in ("remoteUser", "containerUser"):
+        v = root.get(field)
+        if v:
+            print(f"{v} {label}.{field}")
+            sys.exit(0)
+' || true
+  )
+  if [[ -n "$resolved" ]]; then
+    err "container user: $resolved (from devcontainer config: $source)"
+    printf '%s\n' "$resolved"
+    return 0
+  fi
+  err "container user: vscode (fallback — no remoteUser/containerUser found)"
+  printf '%s\n' "vscode"
+}
+
+# Derive the container-side home directory from a username. Honors
+# $DEVC_CONTAINER_HOME override; otherwise "root" → /root, anything else →
+# /home/$user. (Matches the conventional layout used by every devcontainer
+# base image we've encountered.)
+resolve_container_home() {
+  local user="$1"
+  if [[ -n "${DEVC_CONTAINER_HOME:-}" ]]; then
+    printf '%s\n' "$DEVC_CONTAINER_HOME"
+    return 0
+  fi
+  if [[ "$user" == "root" ]]; then
+    printf '%s\n' "/root"
+  else
+    printf '%s\n' "/home/$user"
+  fi
+}
+
+# Read $DEVC_MOUNTS_FILE and echo one expanded line per active mount entry.
 # Blank lines and lines starting with `#` are ignored. Each line is passed
 # through `envsubst`-equivalent expansion via the shell so $HOME, $USER,
-# etc. resolve.
+# $DEVC_CONTAINER_USER, $DEVC_CONTAINER_HOME, etc. resolve.
 read_mounts() {
-  [[ -f "$DC_MOUNTS_FILE" ]] || return 0
+  [[ -f "$DEVC_MOUNTS_FILE" ]] || return 0
   local line
   while IFS= read -r line || [[ -n "$line" ]]; do
     # strip leading/trailing whitespace
@@ -99,7 +166,7 @@ read_mounts() {
     # eval with `printf '%s'` to expand env vars but nothing else dangerous.
     # We deliberately use eval here; the file is user-owned config.
     eval "printf '%s\n' \"$line\""
-  done < "$DC_MOUNTS_FILE"
+  done < "$DEVC_MOUNTS_FILE"
 }
 
 # Build the array of `--mount VAL` args from the mounts config.
@@ -193,19 +260,24 @@ case "$cmd" in
   up|rebuild)
     extra=()
     [[ "$cmd" == "rebuild" ]] && extra+=(--remove-existing-container)
+    # Resolve container user + home BEFORE expanding mounts.conf so the file
+    # can reference ${DEVC_CONTAINER_HOME}.
+    DEVC_CONTAINER_USER="$(resolve_container_user "$WORKSPACE_FOLDER")"
+    DEVC_CONTAINER_HOME="$(resolve_container_home "$DEVC_CONTAINER_USER")"
+    export DEVC_CONTAINER_USER DEVC_CONTAINER_HOME
     # Build mount args. Read into an array so spaces in values survive.
     mounts=()
     while IFS= read -r m; do
       [[ -n "$m" ]] && mounts+=(--mount "$m")
     done < <(read_mounts)
-    if (( ${#mounts[@]} == 0 )) && [[ ! -f "$DC_MOUNTS_FILE" ]]; then
-      err "warning: mounts file $DC_MOUNTS_FILE not found; bringing container up with no extra mounts."
+    if (( ${#mounts[@]} == 0 )) && [[ ! -f "$DEVC_MOUNTS_FILE" ]]; then
+      err "warning: mounts file $DEVC_MOUNTS_FILE not found; bringing container up with no extra mounts."
     fi
     exec devcontainer up \
       --workspace-folder "$WORKSPACE_FOLDER" \
-      "${mounts[@]}" \
-      --dotfiles-repository "$DC_DOTFILES_REPO" \
-      "${extra[@]}" \
+      ${mounts[@]+"${mounts[@]}"} \
+      --dotfiles-repository "$DEVC_DOTFILES_REPO" \
+      ${extra[@]+"${extra[@]}"} \
       "$@"
     ;;
 

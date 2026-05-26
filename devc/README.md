@@ -1,4 +1,4 @@
-# dc
+# devc
 
 Host-side wrapper around the [`devcontainer`](https://containers.dev) CLI
 that injects a standard set of mounts and points every container at this
@@ -10,33 +10,51 @@ mounts below, not the rest of your home directory.
 
 ## Files
 
-- `dot-local/bin/dc` → `~/.local/bin/dc` — the wrapper.
-- `dot-config/dc/mounts.conf` → `~/.config/dc/mounts.conf` — the
-  standard-mounts list. One `--mount` value per line; `$VAR` is expanded.
+- `dot-local/bin/devc` → `~/.local/bin/devc` — the wrapper.
+- `dot-config/devc/mounts.conf` → `~/.config/devc/mounts.conf` — the
+  standard-mounts list. One `--mount` value per line; `$VAR` is expanded
+  (including `$DEVC_CONTAINER_USER` / `$DEVC_CONTAINER_HOME`, see below).
+
+## Container user
+
+`devcontainer --mount` takes static strings — no container-side env
+expansion at mount time — so `devc` must know the container user's home
+path host-side. Resolution order on every `devc up`:
+
+1. `$DEVC_CONTAINER_USER` (explicit override; export before `devc up`).
+2. `mergedConfiguration.remoteUser` from `devcontainer read-configuration`.
+3. `mergedConfiguration.containerUser`.
+4. `vscode` (fallback).
+
+`$DEVC_CONTAINER_HOME` is then derived: `root` → `/root`, anything else →
+`/home/$user`. Override directly with `$DEVC_CONTAINER_HOME` if your image
+uses a non-standard home. Both vars are exported into `mounts.conf`'s
+expansion environment — reference them as `${DEVC_CONTAINER_HOME}` in
+mount targets.
 
 ## Subcommands
 
 | Command | What it does |
 |---------|--------------|
-| `dc up` | `devcontainer up` with standard mounts + dotfiles repo. |
-| `dc rebuild` | Same, plus `--remove-existing-container`. |
-| `dc down` | Stop the container (`docker stop` by id). |
-| `dc shell` | Open an interactive login shell inside. |
-| `dc exec ARGS…` | One-off command inside. |
-| `dc copilot ARGS…` | `copilot --allow-all-tools ARGS…` inside. |
-| `dc status` | Running state, image, mounts. |
-| `dc logs` | `docker logs -f` the container. |
-| `dc config` | Resolved devcontainer config. |
+| `devc up` | `devcontainer up` with standard mounts + dotfiles repo. |
+| `devc rebuild` | Same, plus `--remove-existing-container`. |
+| `devc down` | Stop the container (`docker stop` by id). |
+| `devc shell` | Open an interactive login shell inside. |
+| `devc exec ARGS…` | One-off command inside. |
+| `devc copilot ARGS…` | `copilot --allow-all-tools ARGS…` inside. |
+| `devc status` | Running state, image, mounts. |
+| `devc logs` | `docker logs -f` the container. |
+| `devc config` | Resolved devcontainer config. |
 
-Run any of these from anywhere inside the project tree — `dc` walks up
+Run any of these from anywhere inside the project tree — `devc` walks up
 from `$PWD` to find the nearest `.devcontainer/`. Override with
 `--workspace-folder PATH`.
 
 ## Why no auto-up?
 
-`dc shell` / `dc copilot` / `dc exec` deliberately do NOT start the
+`devc shell` / `devc copilot` / `devc exec` deliberately do NOT start the
 container if it's down. Starting a container is slow and may rebuild —
-you should explicitly choose to do that with `dc up`. If the container
+you should explicitly choose to do that with `devc up`. If the container
 isn't running, the underlying `devcontainer exec` errors loudly.
 
 ## Prereqs
