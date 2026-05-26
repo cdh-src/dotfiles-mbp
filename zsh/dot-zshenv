@@ -12,6 +12,11 @@ export HOMEBREW_NO_ANALYTICS=1
 export EDITOR=nvim
 export VISUAL=nvim
 
+# In any container, point Obsidian-aware tools at the bind-mount target
+# defined in devc/dot-config/devc/mounts.conf. On the host this env var is
+# unset so tools fall back to ~/Documents/obsidian-notes.
+[[ -f /.dockerenv ]] && export OBSIDIAN_VAULT=/obsidian
+
 # Prepend ~/.local/bin to PATH. `typeset -U path` de-dupes, so re-sourcing
 # this file (or nested shells) doesn't accumulate duplicate entries.
 typeset -U path

@@ -84,3 +84,24 @@ mounted, it:
    permissions-config.json, logs}` → `~/.copilot-shared/$name`
    (read/write, shared across all containers)
 4. Stubs `~/.copilot/mcp.json` if missing.
+
+## Obsidian skills inside the container
+
+Two mechanisms point Obsidian-aware tools at the bind-mounted vault:
+
+1. `zsh/dot-zshenv` exports `OBSIDIAN_VAULT=/obsidian` when `/.dockerenv`
+   exists (covers any in-container zsh session).
+2. `devc shell` / `devc exec` / `devc copilot` pass
+   `--remote-env OBSIDIAN_VAULT=/obsidian` so non-shell processes
+   (the `copilot` Node binary in particular) also see it.
+
+The `obsidian-*` Copilot skills resolve the vault via `$OBSIDIAN_VAULT`
+first, so they "just work" inside containers without falling back to the
+host-only `~/Documents/obsidian-notes` path.
+
+Permissions don't carry over from the host: the container uses the
+shared `~/.copilot-shared/permissions-config.json` (host
+`~/.copilot-devcontainer/permissions-config.json`), which is distinct
+from the host's own `~/.copilot/permissions-config.json`. Run
+`/add-dir /obsidian` once inside any container; the grant then persists
+across every future container via the shared mount.
