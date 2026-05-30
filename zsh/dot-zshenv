@@ -13,9 +13,17 @@ export EDITOR=nvim
 export VISUAL=nvim
 
 # In any container, point Obsidian-aware tools at the bind-mount target
-# defined in devc/dot-config/devc/mounts.conf. On the host this env var is
-# unset so tools fall back to ~/Documents/obsidian-notes.
+# defined in devc/dot-config/devc/mounts.conf.
 [[ -f /.dockerenv ]] && export OBSIDIAN_VAULT=/obsidian
+
+# Per-host vault path on the host side. Add a case arm per machine; unknown
+# hosts leave OBSIDIAN_VAULT unset so obsidian-aware tools fall back to
+# ~/Documents/obsidian-notes. Skipped if already set (e.g. inside a container).
+if [[ -z ${OBSIDIAN_VAULT:-} ]]; then
+  case "$HOST" in
+    MacBookPro) export OBSIDIAN_VAULT="$HOME/Documents/obsidian-notes" ;;
+  esac
+fi
 
 # Prepend ~/.local/bin to PATH. `typeset -U path` de-dupes, so re-sourcing
 # this file (or nested shells) doesn't accumulate duplicate entries.
