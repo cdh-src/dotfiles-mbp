@@ -17,7 +17,7 @@ return {
     'mason-org/mason-lspconfig.nvim',
     dependencies = { 'mason-org/mason.nvim' },
     opts = {
-      ensure_installed = { 'pyright', 'lua_ls', 'yamlls' },
+      ensure_installed = { 'pyright', 'emmylua_ls', 'yamlls', 'jsonls' },
       automatic_installation = false,
     },
   },
