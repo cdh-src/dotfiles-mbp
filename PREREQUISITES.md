@@ -18,7 +18,7 @@ Without these, `./update.sh` fails or core configs don't load.
 |------|-----|---------|
 | **Homebrew** | Everything else installs through it. | `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"` |
 | **git** | Stow doesn't need it, but Zinit and lazy.nvim self-bootstrap by cloning their repos on first run. | via `brew bundle` (see [`Brewfile`](./Brewfile)). |
-| **GNU stow** | `update.sh` is a stow wrapper; needs the `--dotfiles` flag (stow ≥ 2.3.1, 2015). | via `brew bundle`. |
+| **GNU stow** | `update.sh` is a stow wrapper; needs `--dotfiles` to work correctly with `dot-config/` payloads (stow ≥ 2.4; 2.3.1 has a known crash on this combination). | via `brew bundle`. |
 | **zsh** | The default macOS login shell since Catalina; `update.sh` and `dot-zprofile` use zsh idioms (`${0:A:h}`, glob qualifiers). | Pre-installed on modern macOS. `bootstrap.sh` falls back to `brew install zsh` only if `command -v zsh` reports it missing. |
 
 ## 2. Tools used by configs
