@@ -99,6 +99,38 @@ case "$PM" in
       curl -fsSL https://starship.rs/install.sh | $SUDO sh -s -- -y >/dev/null
     fi
 
+    # stow: Debian Bookworm ships 2.3.1, which has a bug where `--dotfiles`
+    # silently fails on any package whose payload is `dot-config/` (the virtual
+    # rewrite to `.config/` confuses stow_contents()'s pre-recurse stat). That
+    # silently breaks nvim/starship/zsh packages here. Ubuntu 24.04+ ships
+    # 2.4.x in apt, so check first and only build from source if needed.
+    # Use /usr/local prefix (Debian PATH puts /usr/local/bin before /usr/bin)
+    # and prepend explicitly so update.sh's subshell can't pick the wrong one.
+    stow_ver=$(stow --version 2>/dev/null | awk 'NR==1 {print $NF}')
+    if dpkg --compare-versions "$stow_ver" lt 2.4; then
+      log "stow $stow_ver < 2.4 → building stow 2.4.1 from source (bug: --dotfiles + dot-config)"
+      # perl is a build- and runtime-dep of stow. build-essential already
+      # supplies make+gcc for the treesitter pre-warm above.
+      $SUDO apt-get install -y --no-install-recommends perl >/dev/null
+      stow_build=$(mktemp -d)
+      # Build outside script_dir so update.sh doesn't treat it as a stow package.
+      (
+        cd "$stow_build"
+        curl -fsSLO https://ftp.gnu.org/gnu/stow/stow-2.4.1.tar.gz
+        tar xf stow-2.4.1.tar.gz
+        cd stow-2.4.1
+        ./configure --prefix=/usr/local >/dev/null
+        make >/dev/null
+        $SUDO make install >/dev/null
+      )
+      rm -rf "$stow_build"
+      PATH="/usr/local/bin:$PATH"
+      export PATH
+      log "✓ stow $(stow --version | awk 'NR==1 {print $NF}') at $(command -v stow)"
+    else
+      log "✓ stow $stow_ver (>= 2.4) from apt"
+    fi
+
     # Debian/Ubuntu ship the fd binary as `fdfind`. zshrc aliases ls=lsd and
     # plugins/tooling expect `fd`. Add a user-local symlink; dot-zshenv
     # already prepends ~/.local/bin to PATH.
@@ -137,6 +169,28 @@ done
 # ---- stow --------------------------------------------------------------------
 
 bold "Stowing dotfiles (STOW_SKIP=\"$STOW_SKIP\")"
+# Final guard: make sure whatever stow we resolve is new enough to handle
+# --dotfiles + dot-config/ payloads. Catches both the original Debian 2.3.1
+# bug and any future regression where the wrong stow ends up first on PATH.
+stow_ver=$(stow --version 2>/dev/null | awk 'NR==1 {print $NF}')
+case "$PM" in
+  apt)
+    if ! dpkg --compare-versions "$stow_ver" ge 2.4; then
+      echo "error: GNU stow >= 2.4 required; found $stow_ver at $(command -v stow)" >&2
+      exit 1
+    fi
+    ;;
+  *)
+    # apk path always has 2.4.x; lightweight sanity check only.
+    case "$stow_ver" in
+      2.[4-9]*|2.[1-9][0-9]*|[3-9].*) ;;
+      *)
+        echo "error: GNU stow >= 2.4 required; found $stow_ver at $(command -v stow)" >&2
+        exit 1
+        ;;
+    esac
+    ;;
+esac
 zsh "$script_dir/update.sh"
 
 # ---- nvim pre-warm: install plugins + mason LSPs ---------------------------
