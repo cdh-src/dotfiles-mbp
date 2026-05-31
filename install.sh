@@ -196,8 +196,8 @@ zsh "$script_dir/update.sh"
 # ---- nvim pre-warm: install plugins + mason LSPs ---------------------------
 #
 # First nvim launch otherwise eats 60-120s while lazy.nvim clones plugins and
-# mason-lspconfig kicks off pyright/lua_ls/yamlls. Doing it now means the
-# user's first nvim opens instantly.
+# mason-lspconfig kicks off pyright/emmylua_ls/yamlls/jsonls. Doing it now means
+# the user's first nvim opens instantly.
 #
 # Two phases:
 #   1. +Lazy! sync — clone/install all plugins synchronously.
@@ -212,14 +212,15 @@ nvim --headless "+Lazy! sync" +qa >/dev/null 2>&1 || log "lazy sync had warnings
 # Explicitly drive mason. `+Lazy! sync` installs plugins but lazy.nvim does
 # not LOAD them until triggered, so mason-lspconfig's ensure_installed never
 # fires in a headless pre-warm. Iterate the registry by mason package names
-# (note: mason names differ from lspconfig server names — e.g. "lua_ls" is
-# "lua-language-server"), trigger install() on any missing package, then
+# (note: mason names sometimes differ from lspconfig server names — e.g.
+# "jsonls" is "json-lsp", "yamlls" is "yaml-language-server"), trigger
+# install() on any missing package, then
 # vim.wait for completion (5-minute cap so flaky networks don't hang us).
 prewarm_lua=$(mktemp /tmp/prewarm.XXXXXX)
 cat > "$prewarm_lua" <<'LUA'
 require("mason")
 local r = require("mason-registry")
-local wanted = { "pyright", "lua-language-server", "yaml-language-server" }
+local wanted = { "pyright", "emmylua_ls", "yaml-language-server", "json-lsp" }
 r.refresh(function()
   for _, name in ipairs(wanted) do
     local pkg = r.get_package(name)

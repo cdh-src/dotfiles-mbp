@@ -105,11 +105,12 @@ What `install.sh` does:
    `~/.pre-stow-backup-<timestamp>/`. MS's devcontainer base image ships
    `.zshrc` and `.bashrc` from oh-my-zsh; these would otherwise collide
    with our stow.
-4. Runs `update.sh` with `STOW_SKIP="ghostty tmux"` so mac-only packages
+4. Runs `update.sh` with `STOW_SKIP="ghostty tmux devc"` so mac-only packages
    don't get stowed.
 5. Pre-warms Neovim: runs `Lazy! sync` and explicitly drives the
-   `mason-lspconfig` `ensure_installed` set (pyright, lua_ls, yamlls) so
-   the first interactive `nvim` opens with everything ready. LSPs without
+   `mason-lspconfig` `ensure_installed` set (pyright, emmylua_ls, yamlls,
+   jsonls) so the first interactive `nvim` opens with everything ready.
+   LSPs without
    a prebuilt for the container's platform (e.g. lua-language-server on
    Alpine musl/aarch64) are reported as `MISSING` and skipped; install
    succeeds anyway.
