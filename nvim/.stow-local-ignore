@@ -1,0 +1,8 @@
+# Files in this package that must NOT be stowed into $HOME.
+# Patterns are perl regex; basename-matched unless they contain '/'.
+
+# Generated at nvim startup by lua/plugins/nvim-lspconfig.lua with
+# host-absolute lazy plugin paths; must stay a host-local file, never
+# a symlink back into the repo. See session log
+# 2026-05-30-nvim-lsp-overhaul for why.
+^\.emmyrc\.json$
