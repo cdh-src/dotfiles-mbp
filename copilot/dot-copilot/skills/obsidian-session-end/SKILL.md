@@ -3,9 +3,10 @@ name: obsidian-session-end
 description: >-
   Run the end-of-session ritual for the user's Obsidian PKM vault: completes
   the active session log, updates the project's Current focus, refreshes the
-  agent primer if needed, fleshes out seed learning notes, and shows a diff
-  for review. Use when the user says they're wrapping up a tracked session,
-  or runs the /obsidian-session-end slash command.
+  agent primer if needed, fleshes out seed learning notes, then drafts a
+  commit message and — after explicit user approval — commits and pushes the
+  vault changes. Use when the user says they're wrapping up a tracked
+  session, or runs the /obsidian-session-end slash command.
 user-invocable: true
 ---
 
@@ -72,11 +73,74 @@ Touched files:
   - <vault>/40-Learning/<slug>.md                    (new seed | expanded)
 ```
 
-Then **stop. Do not commit.** The user reviews the diff and commits manually. The human-review gate is part of the design.
+Then transition to step 7 below.
+
+### 7. Stage, commit, and push (after review)
+
+This step replaces the prior "stop and hand off" behavior. The review gate moves one step earlier: the user approves the proposed commit, then the skill performs the git operations. See [[30-Decisions/ADR-0007-session-end-skill-commits-and-pushes]] for the rationale.
+
+All git commands run via `git -C "<vault>" …` so this works from any cwd. **Never `cd`.** The agent stays in the user's project working directory.
+
+**7a. Pre-flight safety checks (bail and report if any fail):**
+- `git -C "<vault>" symbolic-ref --short HEAD` returns `main`. Bail with the actual branch if not.
+- `git -C "<vault>" rev-parse --abbrev-ref --symbolic-full-name @{u}` succeeds (upstream is set). Bail otherwise.
+- `git -C "<vault>" status --porcelain` lists **only files this skill invocation touched**. If anything else is dirty (a half-finished prior session, manual edits, etc.), enumerate the surprises and ask the user how to handle before proceeding.
+- `git -C "<vault>" fetch --quiet` then `git -C "<vault>" rev-list --count HEAD..@{u}` returns `0`. If the local branch is behind upstream, bail — do not auto-pull.
+
+**7b. Draft the commit message** as free-form prose (not a fill-in template), following this style:
+
+- **Subject:** `<project-or-area>: <imperative summary>`, ≤72 chars, no trailing period. Examples:
+  - `ha-onebusaway: log phase-1 smoke test and freshness finding`
+  - `dotfiles-mbp: fix stow 2.3.1 silent failure on Debian devcontainers`
+  - `vault: bootstrap structure, templates, conventions, and skills workflow`
+
+  Use `vault` as the area prefix when the commit is about the vault itself (meta-work, primer drift fixes, ADRs about the vault), otherwise use the project name (matching the kebab-case MOC filename).
+
+- **Body:** prose paragraphs explaining *what changed and why*, grouped by concern. Wrap ~72 chars. Bullets only for genuinely list-shaped content (multiple new artifacts, multiple decisions). The body should explain **decisions**, not just enumerate changes — if it reads like a checklist, rewrite it.
+
+- **Mandatory tail block**, separated from the body by a blank line:
+  - `Session: 20-Sessions/YYYY/MM/<file>.md` — the log this session produced.
+  - One line per new ADR / learning note: `Adds: 30-Decisions/ADR-NNNN-<slug>.md (one-line summary)` or `Adds: 40-Learning/<slug>.md (one-line summary)`. Omit if none.
+  - `Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>`
+
+**7c. Tooling — heredoc trap.** Write the drafted message to a tempfile (`mktemp -t vault-commit.XXXXXX`) and use `git -C "<vault>" commit -F <tempfile>`. **Do NOT** use heredoc-as-command-substitution (`git commit -m "$(cat <<'EOF' … EOF)"`) — it hangs indefinitely in this CLI's bash tool. See [[40-Learning/heredoc-command-substitution-hangs-in-cli-bash]].
+
+**7d. Review gate.** Show the user:
+
+```
+Proposed commit:
+---
+<full message text>
+---
+
+git -C <vault> diff --cached --stat:
+<output>
+
+Will commit on `main` and push to `origin/main`. Approve?
+```
+
+Offer four choices: `commit + push` (default), `commit only`, `edit message first`, `skip`. Honor any in-session signal the user gave earlier (e.g. "don't push tonight").
+
+**7e. On approval:**
+1. `git -C "<vault>" add -A`
+2. `git -C "<vault>" commit -F <tempfile>`
+3. If `commit + push`: `git -C "<vault>" push`
+4. Delete the tempfile
+5. Report the new SHA (`git -C "<vault>" rev-parse --short HEAD`) and, if pushed, confirm the upstream update
+
+**7f. Failure handling:**
+- Commit failure: leave the staging area as-is (do not unstage). Report the error and stop.
+- Push failure: the commit stands locally. Report the error, suggest the user run `git -C <vault> push` after fixing, and stop.
+
+**Do not amend prior commits**, even if the skill is invoked twice in a row. If the user spots a problem after commit, draft a follow-up commit.
 
 ## Hard rules
-- Do not skip step 7 (Next steps) — it is the load-bearing output of this entire workflow.
-- Do not skip step 2 (Current focus) — it is the first thing the next session reads.
+- Do not skip **section 7 of the session log** (Next steps) — it is the load-bearing output of this entire workflow.
+- Do not skip the MOC **Current focus** update (skill step 3) — it is the first thing the next session reads.
 - Do not modify the primer without explicit reason (cite the change). Drift is the failure mode.
-- Do not commit. Do not push. Show diff, stop, hand off.
+- This skill **only commits the vault**. Never touch any code-project repo's git state, regardless of where the agent is running from.
+- Only operate on the vault's `main` branch. Bail if HEAD is elsewhere or upstream is missing.
+- Do not bypass the step-7d review gate. Do not amend previous commits.
+- Use `git -C "<vault>"` for every git invocation; never `cd`.
+- Use `git commit -F <tempfile>` for the commit message; never heredoc-as-arg.
 - If you cannot identify the active session log unambiguously, ask the user rather than guessing.
